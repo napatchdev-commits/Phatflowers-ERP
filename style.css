@@ -1310,3 +1310,52 @@ textarea.form-control {
         margin: 0;
     }
 }
+
+/* ==========================================================================
+   CLOUD LOADING OVERLAY STYLES
+   ========================================================================== */
+.cloud-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-family: 'Prompt', 'Sarabun', sans-serif;
+    text-align: center;
+}
+
+.cloud-loading-overlay .loader-content {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 40px;
+    border-radius: 12px;
+    box-sizing: border-box;
+    max-width: 90vw;
+    width: 440px;
+}
+
+.cloud-loading-overlay .loader-icon {
+    font-size: 54px;
+    color: #2dd4bf;
+    margin-bottom: 20px;
+}
+
+.cloud-loading-overlay h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #ffffff;
+}
+
+.cloud-loading-overlay p {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+}
