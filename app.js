@@ -177,9 +177,9 @@ function initialCloudSync() {
 
     showLoadingOverlay('กำลังดึงข้อมูลล่าสุดจากคลาวด์...');
 
-    // กำหนดเวลา Timeout 7 วินาที หากเน็ตช้าหรือไม่มีเน็ตให้ข้ามไปใช้ออฟไลน์
+    // กำหนดเวลา Timeout 8 วินาที หากเน็ตช้าหรือไม่มีเน็ตให้ข้ามไปใช้ออฟไลน์
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     fetch(url, {
         method: 'POST',
@@ -189,9 +189,21 @@ function initialCloudSync() {
         body: JSON.stringify({ action: 'fetch' }),
         signal: controller.signal
     })
-    .then(response => response.json())
-    .then(res => {
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text(); // Get raw text to diagnostic check if HTML is returned
+    })
+    .then(text => {
         clearTimeout(timeoutId);
+        let res;
+        try {
+            res = JSON.parse(text);
+        } catch (jsonErr) {
+            throw new Error("ลิงก์ Web App ส่งข้อมูลกลับมาไม่ถูกต้อง (ไม่ใช่ JSON) กรุณาตรวจสอบว่าตั้งค่าสิทธิ์เข้าถึงของ Web App เป็น 'Anyone' (ทุกคน) หรือไม่");
+        }
+        
         if (res.status === 'success' && res.result) {
             const data = res.result;
             // โหลดข้อมูลล่าสุดทับลงฐานข้อมูล
@@ -205,19 +217,26 @@ function initialCloudSync() {
             }
             localStorage.setItem('phatflowers_erp_db', JSON.stringify(state.db));
             updateSyncStatus('success', 'เชื่อมต่อ Google Sheets แล้ว');
+        } else if (res.status === 'error') {
+            throw new Error(res.message || "เกิดข้อผิดพลาดในการโหลดไฟล์คลาวด์จากเซิร์ฟเวอร์");
         } else {
-            console.warn("Initial sync returned empty or error:", res);
-            updateSyncStatus('error', 'ดึงข้อมูลคลาวด์ล้มเหลว');
+            console.warn("Initial sync returned empty or default:", res);
+            updateSyncStatus('success', 'เชื่อมต่อคลาวด์ (ฐานข้อมูลเริ่มต้นใหม่)');
         }
     })
     .catch(err => {
         clearTimeout(timeoutId);
         console.error("Initial cloud sync failed:", err);
-        updateSyncStatus('error', 'เชื่อมต่อคลาวด์ล้มเหลว (ใช้ออฟไลน์)');
+        let errorMsg = err.toString();
+        if (err.name === 'AbortError') {
+            errorMsg = "หมดเวลาการเชื่อมต่อ (Timeout 8 วินาที) อินเทอร์เน็ตอาจช้าหรือสัญญาณไม่ดี";
+        }
+        updateSyncStatus('error', 'เชื่อมต่อคลาวด์ล้มเหลว');
+        alert("⚠️ เชื่อมต่อระบบคลาวด์ขัดข้อง:\n" + errorMsg + "\n\n(ระบบจะสลับไปใช้งานข้อมูลสำรองล่าสุดในเครื่องนี้แทนโดยอัตโนมัติเพื่อให้คุณทำงานต่อได้)");
     })
     .finally(() => {
         hideLoadingOverlay();
-        // เรนเดอร์หน้าจอหลังจากพยายามซิงก์เสร็จสิ้น
+        // เรนเดอร์หน้าจอหลักหลังจากพยายามซิงก์เสร็จสิ้น
         navigate('dashboard');
         renderDashboard();
     });
