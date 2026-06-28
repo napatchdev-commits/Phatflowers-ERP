@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhatFlowers ERP - ระบบจัดการหลังบ้าน</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- MOBILE TOP BAR (hidden on desktop) -->
+        <div class="mobile-topbar">
+            <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <span class="mobile-brand-name"><i class="fa-solid fa-seedling"></i> PhatFlowers ERP</span>
+        </div>
+
+        <!-- SIDEBAR OVERLAY (mobile backdrop) -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-seedling brand-icon"></i>
+                <span class="brand-name">PhatFlowers ERP</span>
+            </div>
+            <div id="sync-status" style="font-size: 11px; color: #94a3b8; padding: 0 12px; margin-top: -18px; margin-bottom: 20px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-cloud" id="sync-icon"></i>
+                <span id="sync-text">ไม่ได้เชื่อมต่อคลาวด์</span>
+            </div>
+
+            
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>หน้าหลัก</span>
+                </a>
+                <a href="#" class="menu-item" data-tab="doc-generator" onclick="resetDocEditorState()">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>สร้างเอกสาร</span>
+                </a>
+                <a href="#" class="menu-item" data-tab="doc-history">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>ประวัติเอกสาร</span>
+                </a>
+                <a href="#" class="menu-item" data-tab="customers">
+                    <i class="fa-solid fa-users"></i>
+                    <span>จัดการลูกค้า</span>
+                </a>
+                <a href="#" class="menu-item" data-tab="catalog">
+                    <i class="fa-solid fa-box-archive"></i>
+                    <span>รายการบริการ/สินค้า</span>
+                </a>
+                <a href="#" class="menu-item" data-tab="settings">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>ตั้งค่าระบบ</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <span>PhatFlowers v1.0.0</span>
+            </div>
+        </aside>
+
+        <!-- MAIN MAIN CONTENT -->
+        <main class="main-content">
+            
+            <!-- 1. DASHBOARD TAB -->
+            <section id="dashboard-tab" class="tab-content active">
+                <div class="page-header">
+                    <h1 class="page-title">หน้าหลัก - แดชบอร์ด</h1>
+                </div>
+                
+                <!-- Quick stats -->
+                <div class="grid-4" style="margin-bottom: 24px;">
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i class="fa-solid fa-wallet"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">ยอดขายสำเร็จรวม</span>
+                            <span id="dash-stat-sales" class="stat-value">฿0.00</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-file-invoice"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">ใบเสนอราคาทั้งหมด</span>
+                            <span id="dash-stat-quotations" class="stat-value">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="fa-solid fa-receipt"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">ใบเสร็จรับเงินทั้งหมด</span>
+                            <span id="dash-stat-receipts" class="stat-value">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange"><i class="fa-solid fa-user-check"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">ลูกค้าทั้งหมดในระบบ</span>
+                            <span id="dash-stat-customers" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid-2">
+                    <!-- Recent Documents -->
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-title">
+                            <span>เอกสารทำรายการล่าสุด</span>
+                            <button class="btn btn-secondary btn-sm" onclick="navigate('doc-history')">ดูทั้งหมด</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table-ui" id="dashboard-recent-table">
+                                <thead>
+                                    <tr>
+                                        <th>เลขที่เอกสาร</th>
+                                        <th>ประเภท</th>
+                                        <th>ชื่อลูกค้า</th>
+                                        <th>วันที่เอกสาร</th>
+                                        <th>ราคารวมสุทธิ</th>
+                                        <th>สถานะ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="card" style="margin-bottom: 0; display:flex; flex-direction:column; gap:16px;">
+                        <h2 class="card-title" style="margin-bottom: 0;">ทางลัดจัดการระบบ</h2>
+                        <p style="color: var(--text-secondary); font-size:14px;">คลิกเลือกการทำงานด่วนเพื่อจัดการเอกสารหรือลูกค้าได้อย่างรวดเร็ว</p>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top: 8px;">
+                            <button class="btn btn-primary" onclick="resetDocEditorState(); navigate('doc-generator');" style="flex-direction:column; height: 100px; gap:8px;">
+                                <i class="fa-solid fa-plus-circle" style="font-size:24px;"></i> ออกเอกสารใบเสนอราคา
+                            </button>
+                            <button class="btn btn-secondary" onclick="openCustomerModal()" style="flex-direction:column; height: 100px; gap:8px; border-color: var(--primary); color: var(--primary);">
+                                <i class="fa-solid fa-user-plus" style="font-size:24px;"></i> เพิ่มข้อมูลลูกค้าใหม่
+                            </button>
+                            <button class="btn btn-secondary" onclick="openCatalogModal()" style="flex-direction:column; height: 100px; gap:8px;">
+                                <i class="fa-solid fa-folder-plus" style="font-size:24px;"></i> เพิ่มรายการบริการ
+                            </button>
+                            <button class="btn btn-secondary" onclick="navigate('settings')" style="flex-direction:column; height: 100px; gap:8px;">
+                                <i class="fa-solid fa-cog" style="font-size:24px;"></i> ตั้งค่าบริษัท
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. DOCUMENT GENERATOR TAB (Split Layout) -->
+            <section id="doc-generator-tab" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title" id="generator-title">สร้างเอกสารใหม่</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="resetDocEditorState(); renderDocumentGenerator();"><i class="fa-solid fa-rotate-left"></i> รีเซ็ตหน้ากระดาษ</button>
+                        <button class="btn btn-secondary" id="btn-save-doc" style="border-color: var(--primary); color: var(--primary);"><i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูลร่าง</button>
+                        <button class="btn btn-secondary" id="btn-send-line-auto" style="display: none; background-color: #eff6ff; border-color: #bfdbfe; color: #2563eb;"><i class="fa-brands fa-line" style="font-size: 16px;"></i> ส่งบอท LINE</button>
+                        <button class="btn btn-secondary" id="btn-copy-img" style="background-color: #f0fdf4; border-color: #bbf7d0; color: #16a34a;"><i class="fa-solid fa-copy"></i> คัดลอกรูปภาพ (ส่ง LINE)</button>
+                        <button class="btn btn-secondary" id="btn-download-img" style="background-color: #fdf2f8; border-color: #fbcfe8; color: #db2777;"><i class="fa-solid fa-image"></i> บันทึกรูป (PNG)</button>
+                        <button class="btn btn-primary" id="btn-print-doc"><i class="fa-solid fa-print"></i> พิมพ์ / เซฟ PDF (A4)</button>
+                    </div>
+                </div>
+
+                <div class="generator-layout">
+                    <!-- EDITOR PANEL -->
+                    <div class="editor-panel">
+                        
+                        <!-- 1. Document Configuration -->
+                        <div class="card">
+                            <h2 class="card-title">1. ข้อมูลเอกสารหลัก</h2>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="editor-doc-type">ประเภทเอกสาร</label>
+                                    <select id="editor-doc-type" class="form-control">
+                                        <option value="quotation">ใบเสนอราคา (Quotation)</option>
+                                        <option value="receipt">ใบเสร็จรับเงิน (Receipt)</option>
+                                        <option value="delivery">ใบส่งสินค้า / ใบแจ้งหนี้ (Delivery Order)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editor-doc-no" style="display: flex; justify-content: space-between;">
+                                        <span>เลขที่เอกสาร</span>
+                                        <a href="#" id="btn-regenerate-no" style="color: var(--primary); text-decoration:none; font-size:12px;"><i class="fa-solid fa-arrows-rotate"></i> สุ่มเลขใหม่</a>
+                                    </label>
+                                    <input type="text" id="editor-doc-no" class="form-control">
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="editor-doc-date">วันที่เอกสาร</label>
+                                    <input type="date" id="editor-doc-date" class="form-control">
+                                </div>
+                                <div class="form-group autocomplete-container" id="cust-autocomplete-container">
+                                    <label for="editor-cust-name">ชื่อลูกค้า (ค้นหาได้)</label>
+                                    <input type="text" id="editor-cust-name" class="form-control" placeholder="พิมพ์ชื่อเพื่อค้นหา หรือกรอกข้อมูลใหม่..." autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Customer details -->
+                        <div class="card">
+                            <h2 class="card-title">2. ข้อมูลลูกค้าและสถานที่จัดงาน</h2>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="editor-cust-taxid">เลขประจำตัวผู้เสียภาษี (ลูกค้า)</label>
+                                    <input type="text" id="editor-cust-taxid" class="form-control" placeholder="เช่น 3 1012 99999 99 9">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editor-cust-phone">เบอร์โทรศัพท์</label>
+                                    <input type="text" id="editor-cust-phone" class="form-control" placeholder="เช่น 081-234-5678">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="editor-cust-address">ที่อยู่ผู้เสียภาษี / ที่อยู่ตามบัตร</label>
+                                <textarea id="editor-cust-address" class="form-control" rows="2" placeholder="กรอกที่อยู่สำหรับออกเอกสารใบเสร็จ"></textarea>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="editor-event-date">วันที่จัดงานจริง</label>
+                                    <input type="date" id="editor-event-date" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editor-event-location">สถานที่จัดงาน</label>
+                                    <input type="text" id="editor-event-location" class="form-control" placeholder="เช่น โรงแรม, ร้านอาหาร, บ้านเลขที่">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Line Items -->
+                        <div class="card">
+                            <div class="card-title">
+                                <span>3. รายการสินค้า / บริการ</span>
+                                <button class="btn btn-secondary btn-sm" id="btn-add-item-row"><i class="fa-solid fa-plus"></i> เพิ่มรายการ</button>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="item-table-editor">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px;">#</th>
+                                            <th>รายละเอียดบริการ (พิมพ์ค้นหาจากแคตตาล็อกได้)</th>
+                                            <th style="width: 80px;">จำนวน</th>
+                                            <th style="width: 120px;">ราคา/หน่วย</th>
+                                            <th style="width: 110px;" class="text-right">ราคารวม</th>
+                                            <th style="width: 100px;">จัดการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="editor-items-list">
+                                        <!-- Rendered dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 4. Discounts, VAT & Deposit Settings -->
+                        <div class="card">
+                            <h2 class="card-title">4. การคิดเงิน มัดจำ และหมายเหตุ</h2>
+                            <div class="grid-3">
+                                <div class="form-group">
+                                    <label for="editor-discount">ส่วนลดทั้งหมด (฿)</label>
+                                    <input type="number" id="editor-discount" class="form-control" value="0" min="0">
+                                </div>
+                                <div class="form-group" style="display:flex; align-items:center; height:100%; padding-top:20px;">
+                                    <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:500;">
+                                        <input type="checkbox" id="editor-has-tax" style="width:18px; height:18px;"> คิดภาษีมูลค่าเพิ่ม (VAT 7%)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Deposit selection block -->
+                            <div class="grid-3" style="border-top: 1px dashed var(--border-color); padding-top: 15px; margin-top: 10px;">
+                                <div class="form-group">
+                                    <label for="editor-deposit-option">การชำระเงินมัดจำ</label>
+                                    <select id="editor-deposit-option" class="form-control">
+                                        <option value="none">ชำระเต็มจำนวน (ไม่มีมัดจำ)</option>
+                                        <option value="5000">มัดจำ 5,000 บาท</option>
+                                        <option value="10000">มัดจำ 10,000 บาท</option>
+                                        <option value="custom">ระบุยอดมัดจำเอง</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="editor-deposit-amount-group" style="display:none;">
+                                    <label for="editor-deposit-amount">ยอดเงินมัดจำ (฿)</label>
+                                    <input type="number" id="editor-deposit-amount" class="form-control" value="0" min="0">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="editor-notes">หมายเหตุท้ายเอกสาร</label>
+                                <textarea id="editor-notes" class="form-control" rows="2" placeholder="เช่น ชำระมัดจำ 5,000 บาท ส่วนที่เหลือจ่ายวันติดตั้ง..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 5. Payment details and Managers (Prefilled but editable) -->
+                        <div class="card">
+                            <h2 class="card-title">5. ช่องทางชำระเงินและผู้จัดการผู้ออกบัตร</h2>
+                            <div class="grid-3">
+                                <div class="form-group">
+                                    <label for="editor-bank-name">ชื่อธนาคาร</label>
+                                    <input type="text" id="editor-bank-name" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editor-bank-no">เลขที่บัญชี</label>
+                                    <input type="text" id="editor-bank-no" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editor-bank-accname">ชื่อเจ้าของบัญชี</label>
+                                    <input type="text" id="editor-bank-accname" class="form-control">
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="editor-promptpay-no">เลขพร้อมเพย์</label>
+                                    <input type="text" id="editor-promptpay-no" class="form-control" placeholder="เบอร์โทร หรือ เลขบัตรประชาชน">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editor-qrcode-file">รูปภาพ QR Code (ถ้ามี)</label>
+                                    <input type="file" id="editor-qrcode-file" class="form-control" accept="image/*">
+                                    <input type="hidden" id="editor-qrcode-base64">
+                                </div>
+                            </div>
+                            <div id="editor-qrcode-preview-container" style="display:none; margin-top:-10px; margin-bottom:15px; align-items:center; gap:10px;">
+                                <img id="editor-qrcode-preview" src="" style="width:60px; height:60px; object-fit:contain; border:1px solid var(--border-color); border-radius:4px; background:#fff;">
+                                <button type="button" class="btn btn-danger btn-sm" id="btn-remove-editor-qrcode" style="padding: 2px 8px;">ลบรูปภาพ</button>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="editor-manager-name">ชื่อผู้มีอำนาจลงนาม / ลงลายมือชื่อ</label>
+                                    <input type="text" id="editor-manager-name" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editor-manager-pos">ตำแหน่งงาน</label>
+                                    <input type="text" id="editor-manager-pos" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- PREVIEW PANEL -->
+                    <div class="preview-panel">
+                        <div class="a4-document type-quotation" id="a4-preview-document">
+                            
+                            <!-- Header Block -->
+                            <div class="a4-header">
+                                <div class="a4-header-left">
+                                    <div class="a4-doc-title" id="p-doc-title-th">ใบเสนอราคา</div>
+                                    <div class="a4-doc-subtitle" id="p-doc-title-en">Quotation</div>
+                                    
+                                    <div class="a4-company-name" id="p-comp-name">ภัทร ฟลาวเวอร์ รับจัดงานแต่ง งานบวช</div>
+                                    <div class="a4-company-details">
+                                        <div>ที่อยู่: <span id="p-comp-addr">14 หมู่ 3 ตำบลนิลเพชร อำเภอบางเลน จังหวัดนครปฐม 73130</span></div>
+                                        <div>เลขประจำตัวผู้เสียภาษี : <span id="p-comp-taxid">1 2103 00058 37 0</span></div>
+                                        <div>เบอร์โทร : <span id="p-comp-phone">085-530-4890 , 083-709-6974</span></div>
+                                        <div>อีเมล : <span id="p-comp-email">napatch.dev@gmail.com</span></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="a4-header-right">
+                                    <div class="a4-doc-number">
+                                        <span id="p-doc-no-label">เลขที่ใบเสนอราคา :</span> <span id="p-doc-no" style="font-family:'Inter', sans-serif;">QT-690627-001</span><br>
+                                        วันที่ / Date : <span id="p-doc-date">27 มิถุนายน 2569</span>
+                                    </div>
+                                    
+                                    <div class="a4-customer-box">
+                                        <div class="a4-customer-box-title">ข้อมูลลูกค้า</div>
+                                        <table class="a4-customer-table">
+                                            <tr>
+                                                <td class="label">ชื่อลูกค้า</td>
+                                                <td class="colon">:</td>
+                                                <td id="p-cust-name">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="label">เลขประจำตัวผู้เสียภาษี</td>
+                                                <td class="colon">:</td>
+                                                <td id="p-cust-taxid" style="font-family:'Inter', sans-serif;">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="label">เบอร์โทรศัพท์</td>
+                                                <td class="colon">:</td>
+                                                <td id="p-cust-phone" style="font-family:'Inter', sans-serif;">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="label">ที่อยู่</td>
+                                                <td class="colon">:</td>
+                                                <td id="p-cust-addr">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="label">วันที่จัดงาน</td>
+                                                <td class="colon">:</td>
+                                                <td id="p-event-date">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="label">สถานที่จัดงาน</td>
+                                                <td class="colon">:</td>
+                                                <td id="p-event-location">-</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Table Items Block -->
+                            <div style="flex-grow:1; display:flex; flex-direction:column; justify-content:flex-start;">
+                                <table class="a4-table" id="a4-items-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 80px;" class="text-center">ลำดับ</th>
+                                            <th class="text-left">รายการ</th>
+                                            <th style="width: 80px;" class="text-center">จำนวน</th>
+                                            <th style="width: 120px;" class="text-right">ราคา/หน่วย</th>
+                                            <th style="width: 130px;" class="text-right">ราคารวม</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Rendered dynamically -->
+                                    </tbody>
+                                </table>
+                                
+                                <div class="a4-summary-separator"></div>
+                                
+                                <div class="a4-summary-row">
+                                    <div class="a4-summary-label text-right">ราคารวม :</div>
+                                    <div class="a4-summary-value" id="p-subtotal">0.00</div>
+                                </div>
+                                <div class="a4-summary-row" id="p-discount-row" style="display:none;">
+                                    <div class="a4-summary-label text-right">ส่วนลด :</div>
+                                    <div class="a4-summary-value" id="p-discount">0.00</div>
+                                </div>
+                                <div class="a4-summary-row" id="p-tax-row" style="display:none;">
+                                    <div class="a4-summary-label text-right">ภาษีมูลค่าเพิ่ม (7%) :</div>
+                                    <div class="a4-summary-value" id="p-tax">0.00</div>
+                                </div>
+                                
+                                <div class="a4-grand-total-bar">
+                                    <div class="a4-grand-total-thai" id="p-grand-total-thai">ศูนย์บาทถ้วน</div>
+                                    <div class="a4-grand-total-amount">ราคารวมทั้งหมด : <span id="p-grand-total">฿ 0.00</span></div>
+                                </div>
+                                
+                                <div id="p-deposit-info-container" style="display:none; margin-top: 8px; border: 1px dashed var(--border-color); border-radius: 4px; padding: 10px; background-color: #fffbeb; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    <div class="a4-summary-row" style="margin-bottom: 4px;">
+                                        <div class="a4-summary-label text-right" style="font-weight: 500; font-size: 13px;">ชำระเงินมัดจำ :</div>
+                                        <div class="a4-summary-value" id="p-deposit-amount" style="font-weight: 600; font-size: 13px; color: var(--text-primary);">฿ 0.00</div>
+                                    </div>
+                                    <div class="a4-summary-row" style="font-weight: 600; margin-bottom: 0;">
+                                        <div class="a4-summary-label text-right" style="font-size: 13px; color: #b91c1c;">ยอดคงเหลือ (ชำระ ณ วันติดตั้ง) :</div>
+                                        <div class="a4-summary-value" id="p-balance-amount" style="font-size: 13px; color: #b91c1c;">฿ 0.00</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bottom / Footer Block -->
+                            <div>
+                                <div class="a4-notes">
+                                    <div class="a4-notes-title">หมายเหตุ</div>
+                                    <div class="a4-notes-content" id="p-notes-content">ชำระค่ามัดจำ 5,000 บาท ส่วนที่เหลือจ่ายวันติดตั้ง</div>
+                                </div>
+                                
+                                <div class="a4-footer-block">
+                                    <div class="a4-payment-info" id="p-payment-info">
+                                        <div class="a4-payment-title">ช่องทางชำระเงิน</div>
+                                        <div class="a4-payment-container">
+                                            <div class="a4-payment-details" style="flex-grow: 1;">
+                                                <div class="a4-payment-row">
+                                                    <div class="a4-payment-label">ชื่อบัญชี</div>
+                                                    <div>: <span id="p-bank-accname">ธนากร แก้วไทรอินทร์</span></div>
+                                                </div>
+                                                <div class="a4-payment-row">
+                                                    <div class="a4-payment-label">เลขที่บัญชี</div>
+                                                    <div class="a4-payment-val">: <span id="p-bank-no" style="font-family:'Inter', sans-serif;">034-8-20289-8</span></div>
+                                                </div>
+                                                <div class="a4-payment-row">
+                                                    <div class="a4-payment-label">บัญชีธนาคาร</div>
+                                                    <div>: <span id="p-bank-name">กสิกรไทย</span></div>
+                                                </div>
+                                                <div class="a4-payment-row" id="p-promptpay-row">
+                                                    <div class="a4-payment-label">พร้อมเพย์</div>
+                                                    <div class="a4-payment-val">: <span id="p-promptpay-no" style="font-family:'Inter', sans-serif;">-</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="a4-qrcode-box" id="p-qrcode-container" style="display: none;">
+                                                <img id="p-qrcode-img" src="" alt="QR Code">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="a4-signature-box">
+                                        <div class="a4-signature-line"></div>
+                                        <div class="a4-signature-name" id="p-sig-name">ธนภัทร ชัยบำรุง</div>
+                                        <div class="a4-signature-title" id="p-sig-title">ผู้จัดการ</div>
+                                        <div class="a4-signature-date" id="p-sig-date-row">วันที่ / Date: <span id="p-sig-date">-</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. DOCUMENTS HISTORY TAB -->
+            <section id="doc-history-tab" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">ประวัติเอกสารทั้งหมด</h1>
+                    <button class="btn btn-secondary" id="btn-export-history-csv"><i class="fa-solid fa-file-excel"></i> ส่งออก Excel</button>
+                </div>
+                
+                <div class="card" style="margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap: 16px;">
+                        <!-- Tab Filters -->
+                        <div style="display:flex; gap: 8px;">
+                            <button class="btn btn-secondary history-filter active" data-filter="all">ทั้งหมด</button>
+                            <button class="btn btn-secondary history-filter" data-filter="quotation">ใบเสนอราคา</button>
+                            <button class="btn btn-secondary history-filter" data-filter="delivery">ใบส่งสินค้า</button>
+                            <button class="btn btn-secondary history-filter" data-filter="receipt">ใบเสร็จรับเงิน</button>
+                        </div>
+                        
+                        <!-- Search Box -->
+                        <div style="position: relative; width: 300px;">
+                            <input type="text" id="history-search" class="form-control" placeholder="ค้นหา เลขที่เอกสาร, ชื่อลูกค้า..." style="padding-left:36px;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 13px; color: var(--text-muted);"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table-ui" id="history-table">
+                            <thead>
+                                <tr>
+                                    <th>เลขที่เอกสาร</th>
+                                    <th>ประเภท</th>
+                                    <th>ชื่อลูกค้า</th>
+                                    <th>วันที่เอกสาร</th>
+                                    <th>ราคารวมสุทธิ</th>
+                                    <th>สถานะ</th>
+                                    <th>จัดการการทำงาน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. CUSTOMERS DATABASE TAB -->
+            <section id="customers-tab" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">ฐานข้อมูลและข้อมูลลูกค้า</h1>
+                    <div style="display:flex; gap:12px;">
+                        <button class="btn btn-secondary" id="btn-export-customers-csv"><i class="fa-solid fa-file-excel"></i> ส่งออก Excel</button>
+                        <button class="btn btn-primary" id="btn-add-customer"><i class="fa-solid fa-user-plus"></i> เพิ่มลูกค้าใหม่</button>
+                    </div>
+                </div>
+                
+                <!-- Search customer -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div style="position: relative; width: 350px;">
+                        <input type="text" id="customer-search" class="form-control" placeholder="ค้นหาลูกค้าตาม ชื่อ, เบอร์โทร, ที่อยู่..." style="padding-left:36px;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 13px; color: var(--text-muted);"></i>
+                    </div>
+                </div>
+
+                <!-- Customers table -->
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table-ui" id="customer-table">
+                            <thead>
+                                <tr>
+                                    <th>ชื่อลูกค้า</th>
+                                    <th>เบอร์โทร</th>
+                                    <th>เลขผู้เสียภาษี</th>
+                                    <th>ที่อยู่</th>
+                                    <th>สถานที่จัดงานหลัก</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. CATALOG TAB -->
+            <section id="catalog-tab" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">รายการบริการดอกไม้ & แคตตาล็อก</h1>
+                    <button class="btn btn-primary" id="btn-add-catalog"><i class="fa-solid fa-plus-circle"></i> เพิ่มบริการใหม่</button>
+                </div>
+                
+                <div class="card" style="margin-bottom: 20px;">
+                    <div style="position: relative; width: 350px;">
+                        <input type="text" id="catalog-search" class="form-control" placeholder="ค้นหารายการ, ราคา..." style="padding-left:36px;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 13px; color: var(--text-muted);"></i>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table-ui" id="catalog-table">
+                            <thead>
+                                <tr>
+                                    <th>รายละเอียดรายการสินค้าหรือบริการตกแต่ง</th>
+                                    <th>ราคาประเมินต่อหน่วย (บาท)</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. SETTINGS TAB -->
+            <section id="settings-tab" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">ตั้งค่าโปรแกรมและข้อมูลบริษัท</h1>
+                </div>
+                
+                <form id="settings-form">
+                    <div class="grid-2">
+                        <!-- Left Block: Company defaults -->
+                        <div class="card" style="margin-bottom:0;">
+                            <h2 class="card-title">ข้อมูลร้านหลัก (หัวเอกสารฝั่งซ้าย)</h2>
+                            
+                            <div class="form-group">
+                                <label for="set-comp-name">ชื่อร้าน/บริษัทผู้จัดงาน</label>
+                                <input type="text" id="set-comp-name" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="set-comp-addr">ที่อยู่สำนักงาน / ร้าน</label>
+                                <textarea id="set-comp-addr" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="set-comp-taxid">เลขประจำตัวผู้เสียภาษี</label>
+                                    <input type="text" id="set-comp-taxid" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set-comp-email">อีเมลติดต่อ</label>
+                                    <input type="email" id="set-comp-email" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="set-comp-phone">เบอร์โทรศัพท์ (หลายเบอร์คั่นด้วยจุลภาค)</label>
+                                <input type="text" id="set-comp-phone" class="form-control">
+                            </div>
+                        </div>
+
+                        <!-- Right Block: Bank Details and Manager Details -->
+                        <div style="display:flex; flex-direction:column; gap:20px;">
+                            <div class="card">
+                                <h2 class="card-title">ช่องทางชำระเงินเริ่มต้น (ท้ายเอกสาร)</h2>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label for="set-bank-name">ชื่อธนาคาร</label>
+                                        <input type="text" id="set-bank-name" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="set-bank-no">เลขที่บัญชี</label>
+                                        <input type="text" id="set-bank-no" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="set-bank-accname">ชื่อบัญชีผู้รับเงิน</label>
+                                    <input type="text" id="set-bank-accname" class="form-control">
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label for="set-promptpay-no">เลขพร้อมเพย์</label>
+                                        <input type="text" id="set-promptpay-no" class="form-control" placeholder="เบอร์โทร หรือ เลขบัตรประชาชน">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="set-qrcode-file">รูปภาพ QR Code (ถ้ามี)</label>
+                                        <input type="file" id="set-qrcode-file" class="form-control" accept="image/*">
+                                        <input type="hidden" id="set-qrcode-base64">
+                                    </div>
+                                </div>
+                                <div id="set-qrcode-preview-container" style="display:none; margin-top:-10px; align-items:center; gap:10px;">
+                                    <img id="set-qrcode-preview" src="" style="width:60px; height:60px; object-fit:contain; border:1px solid var(--border-color); border-radius:4px; background:#fff;">
+                                    <button type="button" class="btn btn-danger btn-sm" id="btn-remove-set-qrcode" style="padding: 2px 8px;">ลบรูปภาพ</button>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <h2 class="card-title">ผู้รับผิดชอบงาน/ผู้ลงชื่อลงนาม</h2>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label for="set-manager-name">ชื่อ-นามสกุล</label>
+                                        <input type="text" id="set-manager-name" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="set-manager-pos">ตำแหน่ง</label>
+                                        <input type="text" id="set-manager-pos" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <h2 class="card-title">เชื่อมต่อ Google Sheets (Cloud Sync) & LINE Bot (Messaging API)</h2>
+                                <div class="form-group">
+                                    <label for="set-sheets-url">Google Sheets Web App URL</label>
+                                    <input type="url" id="set-sheets-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label for="set-line-token">LINE Channel Access Token (บอทส่งข้อความฟรี 250 ข้อความ/ด.)</label>
+                                        <input type="text" id="set-line-token" class="form-control" placeholder="ใส่ Channel Access Token (ยาวมาก)...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="set-line-userid">LINE User ID / Group ID (เป้าหมายผู้รับข้อความ)</label>
+                                        <input type="text" id="set-line-userid" class="form-control" placeholder="ใส่รหัส User ID ของคุณ เช่น U1234...">
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-sync-now" style="border-color: var(--primary); color: var(--primary);"><i class="fa-solid fa-cloud-arrow-down"></i> ซิงก์ข้อมูลกับ Sheets ทันที</button>
+                                </div>
+                                <p style="font-size:11px; color:var(--text-secondary); margin-top:8px; line-height:1.4;">
+                                    * เมื่อใส่ลิงก์แล้ว ทุกครั้งที่บันทึกข้อมูลจะถูกซิงก์ไปที่ Google Sheets อัตโนมัติ และจะพยายามดึงข้อมูลล่าสุดทุกครั้งที่เปิดโปรแกรม ทำให้ทำงานร่วมกันบนเครื่องอื่นได้สะดวกครับ
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    <!-- Form Submit Actions -->
+                    <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
+                        <!-- Backup controls -->
+                        <div style="display:flex; gap:12px;">
+                            <button type="button" class="btn btn-secondary" id="btn-export-db"><i class="fa-solid fa-download"></i> สำรองข้อมูล (Export JSON)</button>
+                            <button type="button" class="btn btn-secondary" id="btn-import-db"><i class="fa-solid fa-upload"></i> นำเข้าข้อมูลสำรอง (Import JSON)</button>
+                            <input type="file" id="db-import-file" style="display:none;" accept=".json">
+                            <button type="button" class="btn btn-danger" id="btn-reset-db"><i class="fa-solid fa-triangle-exclamation"></i> ล้างโปรแกรมกลับค่าเริ่มต้น</button>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-circle-check"></i> บันทึกค่าเริ่มต้นทั้งหมด</button>
+                    </div>
+                </form>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================================================
+       MODAL CONTAINERS (Hidden by default)
+       ========================================================================== -->
+       
+    <!-- 1. Customer Modal -->
+    <div class="modal" id="customer-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15, 23, 42, 0.6); z-index:1000; align-items:center; justify-content:center; padding:16px;">
+        <div class="card" style="width: 100%; max-width:600px; padding: 24px; position:relative; box-shadow: var(--shadow-lg);">
+            <button class="btn btn-secondary btn-sm" onclick="closeCustomerModal()" style="position:absolute; right:16px; top:16px; border:none; padding:4px 8px;"><i class="fa-solid fa-times" style="font-size:16px;"></i></button>
+            <h2 class="card-title" id="customer-modal-title" style="margin-top:0;">เพิ่มลูกค้าใหม่</h2>
+            
+            <form id="customer-modal-form">
+                <div class="form-group">
+                    <label for="cust-form-name">ชื่อลูกค้า / ชื่อคู่บ่าวสาว / หน่วยงาน (จำเป็น)</label>
+                    <input type="text" id="cust-form-name" class="form-control" required placeholder="เช่น คุณวิภา และ คุณสมเกียรติ">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="cust-form-taxid">เลขประจำตัวผู้เสียภาษี (ถ้ามี)</label>
+                        <input type="text" id="cust-form-taxid" class="form-control" placeholder="เลข 13 หลัก">
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-form-phone">เบอร์โทรศัพท์ติดต่อ</label>
+                        <input type="text" id="cust-form-phone" class="form-control" placeholder="เช่น 089-xxx-xxxx">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cust-form-address">ที่อยู่ของลูกค้า</label>
+                    <textarea id="cust-form-address" class="form-control" rows="2" placeholder="กรอกเลขที่บ้าน ตำบล อำเภอ จังหวัด"></textarea>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="cust-form-eventdate">วันจัดงาน</label>
+                        <input type="date" id="cust-form-eventdate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-form-eventlocation">สถานที่จัดงาน</label>
+                        <input type="text" id="cust-form-eventlocation" class="form-control" placeholder="เช่น โรงแรมเวสทิน แกรนด์">
+                    </div>
+                </div>
+                
+                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:16px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCustomerModal()">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Catalog Item Modal -->
+    <div class="modal" id="catalog-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15, 23, 42, 0.6); z-index:1000; align-items:center; justify-content:center; padding:16px;">
+        <div class="card" style="width: 100%; max-width:500px; padding: 24px; position:relative; box-shadow: var(--shadow-lg);">
+            <button class="btn btn-secondary btn-sm" onclick="closeCatalogModal()" style="position:absolute; right:16px; top:16px; border:none; padding:4px 8px;"><i class="fa-solid fa-times" style="font-size:16px;"></i></button>
+            <h2 class="card-title" id="catalog-modal-title" style="margin-top:0;">เพิ่มรายการบริการ/สินค้าใหม่</h2>
+            
+            <form id="catalog-modal-form">
+                <div class="form-group">
+                    <label for="catalog-form-desc">รายละเอียดสินค้าหรือบริการจัดดอกไม้</label>
+                    <input type="text" id="catalog-form-desc" class="form-control" required placeholder="เช่น บริการตกแต่งซุ้มดอกไม้รูปหัวใจ">
+                </div>
+                <div class="form-group">
+                    <label for="catalog-form-price">ราคาประเมินต่อหน่วย (บาท)</label>
+                    <input type="number" id="catalog-form-price" class="form-control" required min="0" value="0">
+                </div>
+                
+                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:16px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCatalogModal()">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="thaiBaht.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
