@@ -18,6 +18,15 @@
 </head>
 <body>
 
+    <!-- Cloud Loading Overlay -->
+    <div id="cloud-loading-overlay" class="cloud-loading-overlay" style="display: none;">
+        <div class="loader-content">
+            <i class="fa-solid fa-cloud-arrow-down fa-bounce loader-icon"></i>
+            <h3 id="loader-message">กำลังดาวน์โหลดข้อมูลล่าสุด...</h3>
+            <p>กรุณารอสักครู่ ระบบกำลังดึงข้อมูลล่าสุดจาก Google Sheets</p>
+        </div>
+    </div>
+
     <div class="app-wrapper">
         <!-- MOBILE TOP BAR (hidden on desktop) -->
         <div class="mobile-topbar">
@@ -169,7 +178,7 @@
                 <div class="page-header">
                     <h1 class="page-title" id="generator-title">สร้างเอกสารใหม่</h1>
                     <div class="page-actions">
-                        <button class="btn btn-secondary" onclick="resetDocEditorState(); renderDocumentGenerator();"><i class="fa-solid fa-rotate-left"></i> รีเซ็ตหน้ากระดาษ</button>
+                        <button class="btn btn-secondary" id="btn-reset-doc"><i class="fa-solid fa-rotate-left"></i> รีเซ็ตหน้ากระดาษ</button>
                         <button class="btn btn-secondary" id="btn-save-doc" style="border-color: var(--primary); color: var(--primary);"><i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูลร่าง</button>
                         <button class="btn btn-secondary" id="btn-send-line-auto" style="display: none; background-color: #eff6ff; border-color: #bfdbfe; color: #2563eb;"><i class="fa-brands fa-line" style="font-size: 16px;"></i> ส่งบอท LINE</button>
                         <button class="btn btn-secondary" id="btn-copy-img" style="background-color: #f0fdf4; border-color: #bbf7d0; color: #16a34a;"><i class="fa-solid fa-copy"></i> คัดลอกรูปภาพ (ส่ง LINE)</button>
