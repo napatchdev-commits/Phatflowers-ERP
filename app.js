@@ -1,6 +1,25 @@
-/* ==========================================================================
-   PHATFLOWERS ERP APPLICATION LOGIC (app.js)
-   ========================================================================== */
+// ==========================================================================
+// CONFIGURATION: ใส่ URL Google Sheets Web App ที่นี่
+// เพื่อให้คอมพิวเตอร์และมือถือเชื่อมโยงข้อมูลเหมือนกันทันทีเมื่อเปิดใช้งาน โดยไม่ต้องตั้งค่าซ้ำซ้อน
+const GOOGLE_SHEETS_DATABASE_URL = "https://script.google.com/macros/s/AKfycbwo2JfZ_LtbNJD6bvcNa5cq6-8CHUgICqEvNPkZ-Dsm3xCkR9i4EO0r4nMZyf-HQXvW/exec"; 
+// ==========================================================================
+
+// Helpers for Cloud Loader Overlay
+function showLoadingOverlay(message = 'กำลังโหลดข้อมูล...') {
+    const overlay = document.getElementById('cloud-loading-overlay');
+    const msgEl = document.getElementById('loader-message');
+    if (overlay && msgEl) {
+        msgEl.textContent = message;
+        overlay.style.display = 'flex';
+    }
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('cloud-loading-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
 
 // Global App State
 const state = {
@@ -55,7 +74,7 @@ const DEFAULT_DB = {
         qrCodeBase64: "",
         managerName: "ธนภัทร ชัยบำรุง",
         managerPosition: "ผู้จัดการ",
-        googleSheetsUrl: "",
+        googleSheetsUrl: GOOGLE_SHEETS_DATABASE_URL,
         lineChannelAccessToken: "",
         lineUserId: ""
     },
@@ -98,9 +117,15 @@ function loadDB() {
     if (data) {
         try {
             state.db = JSON.parse(data);
+            if (!state.db) {
+                state.db = JSON.parse(JSON.stringify(DEFAULT_DB));
+            }
             // Ensure all collections exist in case of schema updates
             if (!state.db.settings) state.db.settings = { ...DEFAULT_DB.settings };
             if (state.db.settings) {
+                if ((state.db.settings.googleSheetsUrl === undefined || state.db.settings.googleSheetsUrl === '') && GOOGLE_SHEETS_DATABASE_URL) {
+                    state.db.settings.googleSheetsUrl = GOOGLE_SHEETS_DATABASE_URL;
+                }
                 if (state.db.settings.promptPayNo === undefined) state.db.settings.promptPayNo = '';
                 if (state.db.settings.qrCodeBase64 === undefined) state.db.settings.qrCodeBase64 = '';
                 if (state.db.settings.lineChannelAccessToken === undefined) {
@@ -140,6 +165,64 @@ function resetDB() {
 /* ==========================================================================
    APP INITIALIZATION
    ========================================================================== */
+// ฟังก์ชันซิงก์ข้อมูลคลาวด์เมื่อโหลดหน้าเว็บ
+function initialCloudSync() {
+    const url = state.db.settings.googleSheetsUrl;
+    if (!url) {
+        updateSyncStatus('offline', 'ไม่ได้เชื่อมต่อคลาวด์');
+        navigate('dashboard');
+        renderDashboard();
+        return;
+    }
+
+    showLoadingOverlay('กำลังดึงข้อมูลล่าสุดจากคลาวด์...');
+
+    // กำหนดเวลา Timeout 7 วินาที หากเน็ตช้าหรือไม่มีเน็ตให้ข้ามไปใช้ออฟไลน์
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({ action: 'fetch' }),
+        signal: controller.signal
+    })
+    .then(response => response.json())
+    .then(res => {
+        clearTimeout(timeoutId);
+        if (res.status === 'success' && res.result) {
+            const data = res.result;
+            // โหลดข้อมูลล่าสุดทับลงฐานข้อมูล
+            if (data.customers) state.db.customers = data.customers;
+            if (data.catalog) state.db.catalog = data.catalog;
+            if (data.documents) state.db.documents = data.documents;
+            if (data.settings) {
+                const currentUrl = state.db.settings.googleSheetsUrl;
+                state.db.settings = { ...state.db.settings, ...data.settings };
+                state.db.settings.googleSheetsUrl = currentUrl || data.settings.googleSheetsUrl;
+            }
+            localStorage.setItem('phatflowers_erp_db', JSON.stringify(state.db));
+            updateSyncStatus('success', 'เชื่อมต่อ Google Sheets แล้ว');
+        } else {
+            console.warn("Initial sync returned empty or error:", res);
+            updateSyncStatus('error', 'ดึงข้อมูลคลาวด์ล้มเหลว');
+        }
+    })
+    .catch(err => {
+        clearTimeout(timeoutId);
+        console.error("Initial cloud sync failed:", err);
+        updateSyncStatus('error', 'เชื่อมต่อคลาวด์ล้มเหลว (ใช้ออฟไลน์)');
+    })
+    .finally(() => {
+        hideLoadingOverlay();
+        // เรนเดอร์หน้าจอหลังจากพยายามซิงก์เสร็จสิ้น
+        navigate('dashboard');
+        renderDashboard();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadDB();
     initNavigation();
@@ -149,12 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initDocHistoryPage();
     initSettingsPage();
     
-    // Auto pull sync if URL exists
-    if (state.db.settings.googleSheetsUrl) {
-        syncPullData();
-    } else {
-        updateSyncStatus('offline', 'ไม่ได้เชื่อมต่อคลาวด์');
-    }
+    // ดึงข้อมูลล่าสุดจากคลาวด์ทันทีก่อนเริ่มเรนเดอร์หน้าจอหลัก
+    initialCloudSync();
 
     // Auto pull sync on window focus (switching back to app tab)
     window.addEventListener('focus', () => {
@@ -169,10 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
             syncPullData(false);
         }
     }, 30000);
-    
-    // Default render
-    navigate('dashboard');
-    renderDashboard();
 });
 
 /* Navigation Router */
@@ -312,6 +387,7 @@ function generateDocumentNumber(type) {
     // Count documents of this type this year
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const count = state.db.documents.filter(doc => {
+        if (!doc) return false;
         const docDate = new Date(doc.createdAt || doc.date);
         return doc.docType === type && docDate >= startOfYear;
     }).length + 1;
@@ -324,7 +400,7 @@ function generateDocumentNumber(type) {
    DASHBOARD SECTION
    ========================================================================== */
 function renderDashboard() {
-    const docs = state.db.documents;
+    const docs = (state.db.documents || []).filter(d => d !== null && d !== undefined);
     
     // Math statistics
     const totalQuotations = docs.filter(d => d.docType === 'quotation').length;
@@ -410,7 +486,7 @@ function renderCustomers(searchTerm = '') {
     const listBody = document.querySelector('#customer-table tbody');
     listBody.innerHTML = '';
     
-    let filtered = state.db.customers;
+    let filtered = (state.db.customers || []).filter(c => c !== null && c !== undefined);
     if (searchTerm.trim() !== '') {
         const query = searchTerm.toLowerCase();
         filtered = filtered.filter(c => 
@@ -564,7 +640,7 @@ function renderCatalog(searchTerm = '') {
     const listBody = document.querySelector('#catalog-table tbody');
     listBody.innerHTML = '';
     
-    let filtered = state.db.catalog;
+    let filtered = (state.db.catalog || []).filter(item => item !== null && item !== undefined);
     if (searchTerm.trim() !== '') {
         const query = searchTerm.toLowerCase();
         filtered = filtered.filter(item => 
@@ -789,6 +865,14 @@ function initDocGeneratorPage() {
     setupCustomerAutocomplete();
 
     // Editor Actions
+    const btnResetDoc = document.getElementById('btn-reset-doc');
+    if (btnResetDoc) {
+        btnResetDoc.addEventListener('click', () => {
+            resetDocEditorState();
+            renderDocumentGenerator();
+        });
+    }
+
     document.getElementById('btn-save-doc').addEventListener('click', () => {
         saveDocumentToDB();
     });
@@ -956,6 +1040,10 @@ function renderDocumentGenerator() {
         document.getElementById('editor-qrcode-preview-container').style.display = 'none';
         document.getElementById('editor-qrcode-preview').src = '';
     }
+    
+    // Clear the file input so it doesn't display the previous filename
+    const qrcodeFileInput = document.getElementById('editor-qrcode-file');
+    if (qrcodeFileInput) qrcodeFileInput.value = '';
     
     document.getElementById('editor-manager-name').value = state.currentDoc.managerName;
     document.getElementById('editor-manager-pos').value = state.currentDoc.managerPosition;
@@ -1485,7 +1573,7 @@ function renderDocumentHistory() {
     const filterType = activeFilterBtn.getAttribute('data-filter'); // 'all' | 'quotation' | 'receipt' | 'delivery'
     const searchQuery = document.getElementById('history-search').value.toLowerCase().trim();
 
-    let filtered = state.db.documents;
+    let filtered = (state.db.documents || []).filter(doc => doc !== null && doc !== undefined);
     
     if (filterType !== 'all') {
         filtered = filtered.filter(doc => doc.docType === filterType);
