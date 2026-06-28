@@ -25,8 +25,14 @@ function doPost(e) {
     const action = requestData.action;
     
     if (action === 'fetch') {
-      const dbStr = PropertiesService.getScriptProperties().getProperty('phatflowers_db');
-      const db = dbStr ? JSON.parse(dbStr) : null;
+      let db = null;
+      try {
+        const file = getOrCreateDatabaseFile();
+        const content = file.getContentText();
+        db = content && content !== "{}" ? JSON.parse(content) : null;
+      } catch (fileErr) {
+        Logger.log("Error loading database file: " + fileErr.toString());
+      }
       return responseJSON({ status: 'success', result: db });
       
     } else if (action === 'syncAll') {
@@ -35,8 +41,14 @@ function doPost(e) {
         return responseJSON({ status: 'error', message: 'No data provided for sync' });
       }
       
-      // 1. บันทึกข้อมูลดิบลง Script Properties เพื่อใช้สำหรับการซิงก์ข้ามเครื่อง
-      PropertiesService.getScriptProperties().setProperty('phatflowers_db', JSON.stringify(data));
+      // 1. บันทึกข้อมูลดิบลงไฟล์ใน Google Drive เพื่อเลี่ยงขีดจำกัดขนาดข้อมูล 9KB ของ Script Properties
+      try {
+        const file = getOrCreateDatabaseFile();
+        file.setContent(JSON.stringify(data));
+      } catch (fileErr) {
+        Logger.log("Error saving database file: " + fileErr.toString());
+        return responseJSON({ status: 'error', message: 'Failed to write DB file: ' + fileErr.toString() });
+      }
       
       // 2. นำข้อมูลมาเขียนลง Sheets แยกตามแท็บเพื่อให้คนอ่านและจัดรูปแบบได้ง่าย
       updateSpreadsheetSheets(data);
@@ -83,6 +95,17 @@ function doGet(e) {
 function responseJSON(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ฟังก์ชันดึงหรือสร้างไฟล์สำรองข้อมูลดิบใน Google Drive
+function getOrCreateDatabaseFile() {
+  const fileName = "phatflowers_db_backup.json";
+  const files = DriveApp.getFilesByName(fileName);
+  if (files.hasNext()) {
+    return files.next();
+  } else {
+    return DriveApp.createFile(fileName, "{}", MimeType.PLAIN_TEXT);
+  }
 }
 
 // ฟังก์ชันบันทึกภาพลง Google Drive และทำให้เป็นลิงก์สาธารณะ
