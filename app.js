@@ -1,7 +1,7 @@
 // ==========================================================================
 // CONFIGURATION: ใส่ URL Google Sheets Web App ที่นี่
 // เพื่อให้คอมพิวเตอร์และมือถือเชื่อมโยงข้อมูลเหมือนกันทันทีเมื่อเปิดใช้งาน โดยไม่ต้องตั้งค่าซ้ำซ้อน
-const GOOGLE_SHEETS_DATABASE_URL = "https://script.google.com/macros/s/AKfycbwdvYkINJSGcUCiL4kFf9F2R0JC-O1OY268YEYGKk3YjuaeEFBq5-pehJC7d72lSfbA/exec"; 
+const GOOGLE_SHEETS_DATABASE_URL = "https://script.google.com/macros/s/AKfycbzx2KngxUAl7lTv5_mDfbYLJ-oi-Im9YQSiaKNSEVI_3Mhwn51lyUO68W5aOXOuNDA/exec"; 
 // ==========================================================================
 
 // Helpers for Cloud Loader Overlay
