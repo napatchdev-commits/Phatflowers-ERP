@@ -367,7 +367,7 @@ function updateCatalogSheet(ss, catalog) {
   }
   sheet.clear();
   
-  const headers = ["ID", "รายการสินค้า/บริการ", "ราคาต่อหน่วย (บาท)"];
+  const headers = ["ID", "รายการสินค้า/บริการ", "ราคาต่อหน่วย (บาท)", "ประเภทงาน"];
   sheet.getRange(1, 1, 1, headers.length)
        .setValues([headers])
        .setFontWeight("bold")
@@ -378,7 +378,8 @@ function updateCatalogSheet(ss, catalog) {
     const rows = catalog.map(item => [
       item.id || "",
       item.description || "",
-      item.unitPrice || 0
+      item.unitPrice || 0,
+      item.eventType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'
     ]);
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
     // จัดรูปแบบคอลัมน์ราคาเป็นตัวเลขการเงิน

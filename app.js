@@ -310,8 +310,20 @@ function navigate(tabId) {
     });
 
     // Update visible tab content
+    let targetTabId = tabId;
+    if (tabId === 'catalog-wedding') {
+        state.activeCatalogType = 'wedding';
+        targetTabId = 'catalog';
+    } else if (tabId === 'catalog-ordination') {
+        state.activeCatalogType = 'ordination';
+        targetTabId = 'catalog';
+    } else {
+        // Reset if clicking other tabs
+        state.activeCatalogType = 'wedding';
+    }
+
     document.querySelectorAll('.tab-content').forEach(content => {
-        if (content.id === `${tabId}-tab`) {
+        if (content.id === `${targetTabId}-tab`) {
             content.classList.add('active');
         } else {
             content.classList.remove('active');
@@ -323,7 +335,7 @@ function navigate(tabId) {
         renderDashboard();
     } else if (tabId === 'customers') {
         renderCustomers();
-    } else if (tabId === 'catalog') {
+    } else if (tabId === 'catalog-wedding' || tabId === 'catalog-ordination' || tabId === 'catalog') {
         renderCatalog();
     } else if (tabId === 'doc-generator') {
         renderDocumentGenerator();
@@ -678,7 +690,21 @@ function renderCatalog(searchTerm = '') {
     const listBody = document.querySelector('#catalog-table tbody');
     listBody.innerHTML = '';
     
+    // Update tab header title dynamically
+    const catalogTitleEl = document.querySelector('#catalog-tab .page-title');
+    const catalogType = state.activeCatalogType || 'wedding';
+    if (catalogTitleEl) {
+        catalogTitleEl.innerText = `รายการบริการ & แคตตาล็อก (${catalogType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
+    }
+    
     let filtered = (state.db.catalog || []).filter(item => item !== null && item !== undefined);
+    
+    // Filter by active category type
+    filtered = filtered.filter(item => {
+        const itemType = item.eventType || 'wedding'; // default to wedding
+        return itemType === catalogType;
+    });
+    
     if (searchTerm.trim() !== '') {
         const query = searchTerm.toLowerCase();
         filtered = filtered.filter(item => 
@@ -724,7 +750,7 @@ function openCatalogModal(id = null) {
             document.getElementById('catalog-form-price').value = item.unitPrice;
         }
     } else {
-        title.textContent = 'เพิ่มรายการบริการ/สินค้าใหม่';
+        title.textContent = `เพิ่มบริการใหม่ (${state.activeCatalogType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
     }
     
     modal.style.display = 'flex';
@@ -747,12 +773,15 @@ function saveCatalogForm() {
     if (id) {
         const index = state.db.catalog.findIndex(c => c.id === id);
         if (index !== -1) {
-            state.db.catalog[index] = { ...state.db.catalog[index], description, unitPrice };
+            const eventType = state.db.catalog[index].eventType || state.activeCatalogType || 'wedding';
+            state.db.catalog[index] = { ...state.db.catalog[index], description, unitPrice, eventType };
         }
     } else {
         const newItem = {
             id: 'cat-' + Date.now(),
-            description, unitPrice
+            description, 
+            unitPrice,
+            eventType: state.activeCatalogType || 'wedding'
         };
         state.db.catalog.push(newItem);
     }
