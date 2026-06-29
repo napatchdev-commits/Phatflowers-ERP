@@ -106,7 +106,16 @@ const DEFAULT_DB = {
         { id: "cat-5", description: "ดอกไม้ติดหน้าอกประธาน/แขกผู้ใหญ่ (ต่อชิ้น)", unitPrice: 150 },
         { id: "cat-6", description: "พานขันหมากดอกไม้สด (เซ็ต 5 พาน)", unitPrice: 8500 }
     ],
-    documents: []
+    documents: [],
+    packages: [
+        { id: "pkg-1", name: "แพ็กเกจ Bronze (พิธีเช้ามงคล)", price: 29900, badge: "ยอดนิยมสำหรับพิธีเช้า", items: ["ฉากหลังเวทีพิธีเช้า (Backdrop) ขนาด 3x4 เมตร", "ซุ้มดอกไม้โค้งทางเข้างาน (Arch) 1 ซุ้ม", "แสตนด์ดอกไม้ทางเดิน (Flower Stand) 1 คู่", "พานขันหมากดอกไม้สดครบเซ็ต (5 พาน)", "ดอกไม้ติดหน้าอกประธาน/แขกผู้ใหญ่ 6 ชิ้น"], isHighlighted: false },
+        { id: "pkg-2", name: "แพ็กเกจ Silver (เช้าเลี้ยงเที่ยง)", price: 49900, badge: "คุ้มค่าที่สุด", items: ["ฉากหลังเวที Backdrop ใหญ่ ขนาด 3x6 เมตร", "ซุ้มดอกไม้โค้งทางเข้างานหรูหรา 1 ซุ้ม", "แสตนด์ดอกไม้ทางเดิน (Flower Stand) 2 คู่ (4 จุด)", "ช่อดอกไม้เจ้าสาวโทนสีตามธีมงาน 1 ช่อ", "ดอกไม้ติดหน้าอกประธาน/แขกผู้ใหญ่ 12 ชิ้น", "ตกแต่งโต๊ะลงทะเบียนและเวทีรดน้ำสังข์"], isHighlighted: true },
+        { id: "pkg-3", name: "แพ็กเกจ Gold (หรูหราอลังการ)", price: 0, badge: "พรีเมียมจัดเต็ม", items: ["ฉากหลังเวที Backdrop 3D แผงคู่ ขนาดใหญ่ 3x8 เมตร", "ซุ้มดอกไม้ทางเข้าอุโมงค์ยาว (Flower Tunnel)", "แสตนด์ดอกไม้ตกแต่งทางเดินยาวตลอดงาน 4 คู่", "พานขันหมากและช่อดอกไม้เจ้าสาวระดับมาสเตอร์พีซ", "ดอกไม้ตกแต่งโต๊ะ VIP และแบ็คดรอปถ่ายรูปเสริม", "ทีมดูแลปรับธีมเฉดสีตามสเปกนักจัดดอกไม้มืออาชีพ"], isHighlighted: false }
+    ],
+    promotions: [
+        { id: "promo-1", title: "โปรจองล่วงหน้า 60 วันขึ้นไป", description: "รับส่วนลดทันที 10% สำหรับแพ็กเกจงานแต่งงาน และฟรีช่อดอกไม้เจ้าสาวมูลค่า 1,500 บาท", badge: "Hot", type: "primary" },
+        { id: "promo-2", title: "ฟรี! สแตนด์ดอกไม้ทางเดิน 1 คู่", description: "เมื่อมียอดจองจัดงานแต่งงานรวมตั้งแต่ 35,000 บาทขึ้นไป (พร้อมบริการส่งฟรีในระยะ 30 กม.)", badge: "พิเศษ", type: "secondary" }
+    ]
 };
 
 /* ==========================================================================
@@ -136,6 +145,8 @@ function loadDB() {
             if (!state.db.customers) state.db.customers = [];
             if (!state.db.catalog) state.db.catalog = [];
             if (!state.db.documents) state.db.documents = [];
+            if (!state.db.packages) state.db.packages = JSON.parse(JSON.stringify(DEFAULT_DB.packages));
+            if (!state.db.promotions) state.db.promotions = JSON.parse(JSON.stringify(DEFAULT_DB.promotions));
         } catch (e) {
             console.error("Error parsing local database. Resetting to defaults.", e);
             state.db = { ...DEFAULT_DB };
@@ -210,6 +221,8 @@ function initialCloudSync() {
             if (data.customers) state.db.customers = data.customers;
             if (data.catalog) state.db.catalog = data.catalog;
             if (data.documents) state.db.documents = data.documents;
+            if (data.packages) state.db.packages = data.packages;
+            if (data.promotions) state.db.promotions = data.promotions;
             if (data.settings) {
                 const currentUrl = state.db.settings.googleSheetsUrl;
                 state.db.settings = { ...state.db.settings, ...data.settings };
@@ -247,6 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initCustomerPage();
     initCatalogPage();
+    initPackagesPage();
+    initPromotionsPage();
     initDocGeneratorPage();
     initDocHistoryPage();
     initSettingsPage();
@@ -316,6 +331,10 @@ function navigate(tabId) {
         renderDocumentHistory();
     } else if (tabId === 'settings') {
         renderSettings();
+    } else if (tabId === 'packages') {
+        renderPackages();
+    } else if (tabId === 'promotions') {
+        renderPromotions();
     }
 }
 
@@ -753,6 +772,247 @@ function deleteCatalogItem(id) {
         renderCatalog();
     }
 }
+
+/* ==========================================================================
+   PACKAGES MANAGEMENT (Preset Packages)
+   ========================================================================== */
+function initPackagesPage() {
+    document.getElementById('btn-add-package').addEventListener('click', () => {
+        openPackageModal();
+    });
+
+    document.getElementById('package-modal-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        savePackageForm();
+    });
+    
+    document.getElementById('package-search').addEventListener('input', (e) => {
+        renderPackages(e.target.value);
+    });
+}
+
+function renderPackages(searchTerm = '') {
+    const listBody = document.querySelector('#packages-table tbody');
+    listBody.innerHTML = '';
+    
+    let filtered = (state.db.packages || []).filter(item => item !== null && item !== undefined);
+    
+    if (searchTerm.trim() !== '') {
+        const term = searchTerm.toLowerCase();
+        filtered = filtered.filter(pkg => 
+            (pkg.name && pkg.name.toLowerCase().includes(term)) ||
+            (pkg.badge && pkg.badge.toLowerCase().includes(term)) ||
+            (Array.isArray(pkg.items) && pkg.items.join(' ').toLowerCase().includes(term)) ||
+            (typeof pkg.items === 'string' && pkg.items.toLowerCase().includes(term))
+        );
+    }
+    
+    if (filtered.length === 0) {
+        listBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">ไม่พบรายการแพ็กเกจ</td></tr>';
+        return;
+    }
+    
+    filtered.forEach(pkg => {
+        const tr = document.createElement('tr');
+        const itemsList = Array.isArray(pkg.items) ? pkg.items.join(', ') : (pkg.items || "");
+        const highlightText = pkg.isHighlighted ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-secondary">No</span>';
+        
+        tr.innerHTML = `
+            <td style="font-weight:600;">${pkg.name || ""}</td>
+            <td>${pkg.price > 0 ? formatCurrency(pkg.price) + " บาท" : "สอบถามราคา"}</td>
+            <td>${pkg.badge ? `<span class="badge badge-info">${pkg.badge}</span>` : "-"}</td>
+            <td style="font-size:12px; color:var(--text-muted); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${itemsList}</td>
+            <td>${highlightText}</td>
+            <td>
+                <button class="btn btn-secondary btn-sm" onclick="openPackageModal('${pkg.id}')"><i class="fas fa-edit"></i> แก้ไข</button>
+                <button class="btn btn-danger btn-sm" onclick="deletePackageItem('${pkg.id}')"><i class="fas fa-trash"></i> ลบ</button>
+            </td>
+        `;
+        listBody.appendChild(tr);
+    });
+}
+
+function openPackageModal(id = null) {
+    state.editingPackageId = id;
+    const modal = document.getElementById('package-modal');
+    const form = document.getElementById('package-modal-form');
+    const title = document.getElementById('package-modal-title');
+    
+    form.reset();
+    
+    if (id) {
+        title.innerText = "แก้ไขข้อมูลแพ็กเกจ";
+        const pkg = state.db.packages.find(p => p.id === id);
+        if (pkg) {
+            document.getElementById('pkg-form-name').value = pkg.name || "";
+            document.getElementById('pkg-form-price').value = pkg.price || 0;
+            document.getElementById('pkg-form-badge').value = pkg.badge || "";
+            document.getElementById('pkg-form-items').value = Array.isArray(pkg.items) ? pkg.items.join(', ') : (pkg.items || "");
+            document.getElementById('pkg-form-highlighted').checked = !!pkg.isHighlighted;
+        }
+    } else {
+        title.innerText = "เพิ่มแพ็กเกจใหม่สำเร็จรูป";
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closePackageModal() {
+    document.getElementById('package-modal').style.display = 'none';
+}
+
+window.closePackageModal = closePackageModal;
+
+function savePackageForm() {
+    const id = state.editingPackageId;
+    const name = document.getElementById('pkg-form-name').value.trim();
+    const price = parseFloat(document.getElementById('pkg-form-price').value) || 0;
+    const badge = document.getElementById('pkg-form-badge').value.trim();
+    const itemsRaw = document.getElementById('pkg-form-items').value.trim();
+    const isHighlighted = document.getElementById('pkg-form-highlighted').checked;
+    
+    // Split items by comma and trim each
+    const items = itemsRaw.split(',').map(i => i.trim()).filter(i => i.length > 0);
+    
+    if (id) {
+        const index = state.db.packages.findIndex(p => p.id === id);
+        if (index !== -1) {
+            state.db.packages[index] = { ...state.db.packages[index], name, price, badge, items, isHighlighted };
+        }
+    } else {
+        const newId = "pkg-" + Date.now();
+        const newPkg = { id: newId, name, price, badge, items, isHighlighted };
+        state.db.packages.push(newPkg);
+    }
+    
+    saveDB(true);
+    closePackageModal();
+    renderPackages();
+}
+
+function deletePackageItem(id) {
+    const pkg = state.db.packages.find(p => p.id === id);
+    if (!pkg) return;
+    
+    if (confirm(`คุณต้องการลบแพ็กเกจ "${pkg.name}" หรือไม่?`)) {
+        state.db.packages = state.db.packages.filter(p => p.id !== id);
+        saveDB(true);
+        renderPackages();
+    }
+}
+
+window.openPackageModal = openPackageModal;
+window.deletePackageItem = deletePackageItem;
+
+/* ==========================================================================
+   PROMOTIONS MANAGEMENT (Special Promotions)
+   ========================================================================== */
+function initPromotionsPage() {
+    document.getElementById('btn-add-promotion').addEventListener('click', () => {
+        openPromotionModal();
+    });
+
+    document.getElementById('promotion-modal-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        savePromotionForm();
+    });
+}
+
+function renderPromotions() {
+    const listBody = document.querySelector('#promotions-table tbody');
+    listBody.innerHTML = '';
+    
+    const filtered = (state.db.promotions || []).filter(item => item !== null && item !== undefined);
+    
+    if (filtered.length === 0) {
+        listBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">ไม่พบรายการโปรโมชัน</td></tr>';
+        return;
+    }
+    
+    filtered.forEach(p => {
+        const tr = document.createElement('tr');
+        const themeText = p.type === 'secondary' ? '<span class="badge badge-success">สีเขียวมรกต</span>' : '<span class="badge badge-primary">สีโรสโกลด์</span>';
+        
+        tr.innerHTML = `
+            <td style="font-weight:600;">${p.title || ""}</td>
+            <td style="font-size:13px; color:var(--text-muted); max-width: 350px;">${p.description || ""}</td>
+            <td>${p.badge ? `<span class="badge badge-info">${p.badge}</span>` : "-"}</td>
+            <td>${themeText}</td>
+            <td>
+                <button class="btn btn-secondary btn-sm" onclick="openPromotionModal('${p.id}')"><i class="fas fa-edit"></i> แก้ไข</button>
+                <button class="btn btn-danger btn-sm" onclick="deletePromotionItem('${p.id}')"><i class="fas fa-trash"></i> ลบ</button>
+            </td>
+        `;
+        listBody.appendChild(tr);
+    });
+}
+
+function openPromotionModal(id = null) {
+    state.editingPromotionId = id;
+    const modal = document.getElementById('promotion-modal');
+    const form = document.getElementById('promotion-modal-form');
+    const title = document.getElementById('promotion-modal-title');
+    
+    form.reset();
+    
+    if (id) {
+        title.innerText = "แก้ไขข้อมูลโปรโมชัน";
+        const p = state.db.promotions.find(promo => promo.id === id);
+        if (p) {
+            document.getElementById('promo-form-title').value = p.title || "";
+            document.getElementById('promo-form-desc').value = p.description || "";
+            document.getElementById('promo-form-badge').value = p.badge || "";
+            document.getElementById('promo-form-type').value = p.type || "primary";
+        }
+    } else {
+        title.innerText = "เพิ่มโปรโมชันใหม่";
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closePromotionModal() {
+    document.getElementById('promotion-modal').style.display = 'none';
+}
+
+window.closePromotionModal = closePromotionModal;
+
+function savePromotionForm() {
+    const id = state.editingPromotionId;
+    const title = document.getElementById('promo-form-title').value.trim();
+    const description = document.getElementById('promo-form-desc').value.trim();
+    const badge = document.getElementById('promo-form-badge').value.trim();
+    const type = document.getElementById('promo-form-type').value;
+    
+    if (id) {
+        const index = state.db.promotions.findIndex(p => p.id === id);
+        if (index !== -1) {
+            state.db.promotions[index] = { ...state.db.promotions[index], title, description, badge, type };
+        }
+    } else {
+        const newId = "promo-" + Date.now();
+        const newPromo = { id: newId, title, description, badge, type };
+        state.db.promotions.push(newPromo);
+    }
+    
+    saveDB(true);
+    closePromotionModal();
+    renderPromotions();
+}
+
+function deletePromotionItem(id) {
+    const p = state.db.promotions.find(promo => promo.id === id);
+    if (!p) return;
+    
+    if (confirm(`คุณต้องการลบโปรโมชัน "${p.title}" หรือไม่?`)) {
+        state.db.promotions = state.db.promotions.filter(promo => promo.id !== id);
+        saveDB(true);
+        renderPromotions();
+    }
+}
+
+window.openPromotionModal = openPromotionModal;
+window.deletePromotionItem = deletePromotionItem;
 
 /* ==========================================================================
    DOCUMENT GENERATOR & PIXEL-PERFECT PREVIEW
@@ -1853,6 +2113,8 @@ function importDatabase(e) {
             if (importedData.settings && Array.isArray(importedData.customers) && Array.isArray(importedData.catalog) && Array.isArray(importedData.documents)) {
                 if (confirm("ยืนยันการนำเข้าข้อมูล? การนำเข้าข้อมูลนี้จะลบข้อมูลปัจจุบันของคุณทั้งหมด!")) {
                     state.db = importedData;
+                    if (!state.db.packages) state.db.packages = [];
+                    if (!state.db.promotions) state.db.promotions = [];
                     saveDB();
                     alert("นำเข้าข้อมูลสำรองสำเร็จแล้ว!");
                     location.reload();
@@ -1916,6 +2178,8 @@ function syncPullData(showSuccessAlert = false) {
                 if (data.customers) state.db.customers = data.customers;
                 if (data.catalog) state.db.catalog = data.catalog;
                 if (data.documents) state.db.documents = data.documents;
+                if (data.packages) state.db.packages = data.packages;
+                if (data.promotions) state.db.promotions = data.promotions;
                 if (data.settings) {
                     const currentUrl = state.db.settings.googleSheetsUrl;
                     state.db.settings = { ...state.db.settings, ...data.settings };
