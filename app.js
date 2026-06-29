@@ -317,9 +317,23 @@ function navigate(tabId) {
     } else if (tabId === 'catalog-ordination') {
         state.activeCatalogType = 'ordination';
         targetTabId = 'catalog';
+    } else if (tabId === 'packages-wedding') {
+        state.activePackageType = 'wedding';
+        targetTabId = 'packages';
+    } else if (tabId === 'packages-ordination') {
+        state.activePackageType = 'ordination';
+        targetTabId = 'packages';
+    } else if (tabId === 'promotions-wedding') {
+        state.activePromotionType = 'wedding';
+        targetTabId = 'promotions';
+    } else if (tabId === 'promotions-ordination') {
+        state.activePromotionType = 'ordination';
+        targetTabId = 'promotions';
     } else {
         // Reset if clicking other tabs
         state.activeCatalogType = 'wedding';
+        state.activePackageType = 'wedding';
+        state.activePromotionType = 'wedding';
     }
 
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -343,9 +357,9 @@ function navigate(tabId) {
         renderDocumentHistory();
     } else if (tabId === 'settings') {
         renderSettings();
-    } else if (tabId === 'packages') {
+    } else if (tabId === 'packages-wedding' || tabId === 'packages-ordination' || tabId === 'packages') {
         renderPackages();
-    } else if (tabId === 'promotions') {
+    } else if (tabId === 'promotions-wedding' || tabId === 'promotions-ordination' || tabId === 'promotions') {
         renderPromotions();
     }
 }
@@ -824,7 +838,20 @@ function renderPackages(searchTerm = '') {
     const listBody = document.querySelector('#packages-table tbody');
     listBody.innerHTML = '';
     
+    // Update tab header title dynamically
+    const packagesTitleEl = document.querySelector('#packages-tab .page-title');
+    const packageType = state.activePackageType || 'wedding';
+    if (packagesTitleEl) {
+        packagesTitleEl.innerText = `แพ็กเกจจัดงานสำเร็จรูป (${packageType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
+    }
+    
     let filtered = (state.db.packages || []).filter(item => item !== null && item !== undefined);
+    
+    // Filter by active package type
+    filtered = filtered.filter(item => {
+        const itemType = item.eventType || 'wedding';
+        return itemType === packageType;
+    });
     
     if (searchTerm.trim() !== '') {
         const term = searchTerm.toLowerCase();
@@ -880,7 +907,7 @@ function openPackageModal(id = null) {
             document.getElementById('pkg-form-highlighted').checked = !!pkg.isHighlighted;
         }
     } else {
-        title.innerText = "เพิ่มแพ็กเกจใหม่สำเร็จรูป";
+        title.innerText = `เพิ่มแพ็กเกจใหม่ (${state.activePackageType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
     }
     
     modal.style.display = 'flex';
@@ -906,11 +933,20 @@ function savePackageForm() {
     if (id) {
         const index = state.db.packages.findIndex(p => p.id === id);
         if (index !== -1) {
-            state.db.packages[index] = { ...state.db.packages[index], name, price, badge, items, isHighlighted };
+            const eventType = state.db.packages[index].eventType || state.activePackageType || 'wedding';
+            state.db.packages[index] = { ...state.db.packages[index], name, price, badge, items, isHighlighted, eventType };
         }
     } else {
         const newId = "pkg-" + Date.now();
-        const newPkg = { id: newId, name, price, badge, items, isHighlighted };
+        const newPkg = { 
+            id: newId, 
+            name, 
+            price, 
+            badge, 
+            items, 
+            isHighlighted,
+            eventType: state.activePackageType || 'wedding'
+        };
         state.db.packages.push(newPkg);
     }
     
@@ -951,7 +987,19 @@ function renderPromotions() {
     const listBody = document.querySelector('#promotions-table tbody');
     listBody.innerHTML = '';
     
-    const filtered = (state.db.promotions || []).filter(item => item !== null && item !== undefined);
+    const promoType = state.activePromotionType || 'wedding';
+    const promoTitleEl = document.querySelector('#promotions-tab .page-title');
+    if (promoTitleEl) {
+        promoTitleEl.innerText = `โปรโมชันพิเศษสำหรับลูกค้า (${promoType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
+    }
+    
+    let filtered = (state.db.promotions || []).filter(item => item !== null && item !== undefined);
+    
+    // Filter by active promotion type
+    filtered = filtered.filter(item => {
+        const itemType = item.eventType || 'wedding';
+        return itemType === promoType;
+    });
     
     if (filtered.length === 0) {
         listBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">ไม่พบรายการโปรโมชัน</td></tr>';
@@ -994,7 +1042,7 @@ function openPromotionModal(id = null) {
             document.getElementById('promo-form-type').value = p.type || "primary";
         }
     } else {
-        title.innerText = "เพิ่มโปรโมชันใหม่";
+        title.innerText = `เพิ่มโปรโมชันใหม่ (${state.activePromotionType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
     }
     
     modal.style.display = 'flex';
@@ -1016,11 +1064,19 @@ function savePromotionForm() {
     if (id) {
         const index = state.db.promotions.findIndex(p => p.id === id);
         if (index !== -1) {
-            state.db.promotions[index] = { ...state.db.promotions[index], title, description, badge, type };
+            const eventType = state.db.promotions[index].eventType || state.activePromotionType || 'wedding';
+            state.db.promotions[index] = { ...state.db.promotions[index], title, description, badge, type, eventType };
         }
     } else {
         const newId = "promo-" + Date.now();
-        const newPromo = { id: newId, title, description, badge, type };
+        const newPromo = { 
+            id: newId, 
+            title, 
+            description, 
+            badge, 
+            type,
+            eventType: state.activePromotionType || 'wedding'
+        };
         state.db.promotions.push(newPromo);
     }
     

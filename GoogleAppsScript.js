@@ -292,11 +292,13 @@ function updateSpreadsheetSheets(data) {
   // 4. อัปเดตชีตเอกสาร (Documents)
   updateDocumentsSheet(ss, data.documents || []);
   
-  // 5. อัปเดตชีตแพ็กเกจจัดงาน (Packages)
+  // 5. อัปเดตชีตแพ็กเกจจัดงาน (Packages งานแต่ง และ PackagesOrdination งานบวช)
   updatePackagesSheet(ss, data.packages || []);
+  updatePackagesOrdinationSheet(ss, data.packages || []);
   
-  // 6. อัปเดตชีตโปรโมชัน (Promotions)
+  // 6. อัปเดตชีตโปรโมชัน (Promotions งานแต่ง และ PromotionsOrdination งานบวช)
   updatePromotionsSheet(ss, data.promotions || []);
+  updatePromotionsOrdinationSheet(ss, data.promotions || []);
 }
 
 function updateSettingsSheet(ss, settings) {
@@ -539,21 +541,58 @@ function updatePackagesSheet(ss, packages) {
   }
   sheet.clear();
   
-  const headers = ["ID", "ชื่อแพ็กเกจ", "ราคา (บาท)", "ป้ายกำกับ", "รายการบริการที่รวม (แยกด้วยเครื่องหมายจุลภาค ,)", "ไฮไลต์เด่น (yes/no)"];
+  const headers = ["ID", "ชื่อแพ็กเกจ", "ราคา (บาท)", "ป้ายกำกับ", "รายการบริการที่รวม (แยกด้วยเครื่องหมายจุลภาค ,)", "ไฮไลต์เด่น (yes/no)", "ประเภทงาน"];
   sheet.getRange(1, 1, 1, headers.length)
        .setValues([headers])
        .setFontWeight("bold")
        .setBackground("#2dd4bf")
        .setFontColor("#ffffff");
        
-  if (packages.length > 0) {
-    const rows = packages.map(pkg => [
+  // กรองเฉพาะแพ็กเกจงานแต่ง
+  const weddingPkgs = packages.filter(p => p && p.eventType !== 'ordination');
+  
+  if (weddingPkgs.length > 0) {
+    const rows = weddingPkgs.map(pkg => [
       pkg.id || "",
       pkg.name || "",
       pkg.price || 0,
       pkg.badge || "",
       Array.isArray(pkg.items) ? pkg.items.join(', ') : (pkg.items || ""),
-      pkg.isHighlighted ? "yes" : "no"
+      pkg.isHighlighted ? "yes" : "no",
+      "งานแต่งงาน"
+    ]);
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+    sheet.getRange(2, 3, rows.length, 1).setNumberFormat("#,##0.00");
+  }
+  sheet.autoResizeColumns(1, headers.length);
+}
+
+function updatePackagesOrdinationSheet(ss, packages) {
+  let sheet = ss.getSheetByName("PackagesOrdination");
+  if (!sheet) {
+    sheet = ss.insertSheet("PackagesOrdination");
+  }
+  sheet.clear();
+  
+  const headers = ["ID", "ชื่อแพ็กเกจ", "ราคา (บาท)", "ป้ายกำกับ", "รายการบริการที่รวม (แยกด้วยเครื่องหมายจุลภาค ,)", "ไฮไลต์เด่น (yes/no)", "ประเภทงาน"];
+  sheet.getRange(1, 1, 1, headers.length)
+       .setValues([headers])
+       .setFontWeight("bold")
+       .setBackground("#cca43b")
+       .setFontColor("#ffffff");
+       
+  // กรองเฉพาะแพ็กเกจงานบวช
+  const ordinationPkgs = packages.filter(p => p && p.eventType === 'ordination');
+  
+  if (ordinationPkgs.length > 0) {
+    const rows = ordinationPkgs.map(pkg => [
+      pkg.id || "",
+      pkg.name || "",
+      pkg.price || 0,
+      pkg.badge || "",
+      Array.isArray(pkg.items) ? pkg.items.join(', ') : (pkg.items || ""),
+      pkg.isHighlighted ? "yes" : "no",
+      "งานบวช"
     ]);
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
     sheet.getRange(2, 3, rows.length, 1).setNumberFormat("#,##0.00");
@@ -569,20 +608,55 @@ function updatePromotionsSheet(ss, promotions) {
   }
   sheet.clear();
   
-  const headers = ["ID", "หัวข้อโปรโมชัน", "รายละเอียด", "ป้ายกำกับ", "ธีมสี (primary/secondary)"];
+  const headers = ["ID", "หัวข้อโปรโมชัน", "รายละเอียด", "ป้ายกำกับ", "ธีมสี (primary/secondary)", "ประเภทงาน"];
   sheet.getRange(1, 1, 1, headers.length)
        .setValues([headers])
        .setFontWeight("bold")
        .setBackground("#2dd4bf")
        .setFontColor("#ffffff");
        
-  if (promotions.length > 0) {
-    const rows = promotions.map(p => [
+  // กรองเฉพาะโปรโมชันงานแต่ง
+  const weddingPromos = promotions.filter(p => p && p.eventType !== 'ordination');
+  
+  if (weddingPromos.length > 0) {
+    const rows = weddingPromos.map(p => [
       p.id || "",
       p.title || "",
       p.description || "",
       p.badge || "",
-      p.type || "primary"
+      p.type || "primary",
+      "งานแต่งงาน"
+    ]);
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+  sheet.autoResizeColumns(1, headers.length);
+}
+
+function updatePromotionsOrdinationSheet(ss, promotions) {
+  let sheet = ss.getSheetByName("PromotionsOrdination");
+  if (!sheet) {
+    sheet = ss.insertSheet("PromotionsOrdination");
+  }
+  sheet.clear();
+  
+  const headers = ["ID", "หัวข้อโปรโมชัน", "รายละเอียด", "ป้ายกำกับ", "ธีมสี (primary/secondary)", "ประเภทงาน"];
+  sheet.getRange(1, 1, 1, headers.length)
+       .setValues([headers])
+       .setFontWeight("bold")
+       .setBackground("#cca43b")
+       .setFontColor("#ffffff");
+       
+  // กรองเฉพาะโปรโมชันงานบวช
+  const ordinationPromos = promotions.filter(p => p && p.eventType === 'ordination');
+  
+  if (ordinationPromos.length > 0) {
+    const rows = ordinationPromos.map(p => [
+      p.id || "",
+      p.title || "",
+      p.description || "",
+      p.badge || "",
+      p.type || "primary",
+      "งานบวช"
     ]);
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
