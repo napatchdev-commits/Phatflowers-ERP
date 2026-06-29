@@ -132,6 +132,21 @@ function doPost(e) {
       
       return responseJSON({ status: 'success', message: 'Inquiry registered successfully', requestId: sheetResult.requestId });
       
+    } else if (action === 'debugFetch') {
+      const files = DriveApp.getFilesByName("phatflowers_db_backup.json");
+      const list = [];
+      while (files.hasNext()) {
+        const f = files.next();
+        list.push({
+          id: f.getId(),
+          name: f.getName(),
+          size: f.getSize(),
+          lastUpdated: f.getLastUpdated().toString(),
+          content: f.getContentText()
+        });
+      }
+      return responseJSON({ status: 'success', files: list });
+      
     } else {
       return responseJSON({ status: 'error', message: 'Invalid action: ' + action });
     }
