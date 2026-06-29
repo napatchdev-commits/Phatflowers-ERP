@@ -155,11 +155,32 @@ function responseJSON(data) {
 function getOrCreateDatabaseFile() {
   const fileName = "phatflowers_db_backup.json";
   const files = DriveApp.getFilesByName(fileName);
-  if (files.hasNext()) {
-    return files.next();
-  } else {
+  const list = [];
+  while (files.hasNext()) {
+    list.push(files.next());
+  }
+  
+  if (list.length === 0) {
     return DriveApp.createFile(fileName, "{}", MimeType.PLAIN_TEXT);
   }
+  
+  // จัดเรียงไฟล์ตามวันที่แก้ไขล่าสุด (ใหม่สุดอยู่บน)
+  list.sort((a, b) => b.getLastUpdated().getTime() - a.getLastUpdated().getTime());
+  
+  const mainFile = list[0];
+  
+  // ลบไฟล์ซ้ำที่เก่ากว่าทิ้งเพื่อป้องกันการดึงผิดไฟล์ในอนาคต
+  if (list.length > 1) {
+    for (let i = 1; i < list.length; i++) {
+      try {
+        list[i].setTrashed(true);
+      } catch (trashErr) {
+        Logger.log("Error trashing duplicate file: " + trashErr.toString());
+      }
+    }
+  }
+  
+  return mainFile;
 }
 
 // ฟังก์ชันบันทึกภาพลง Google Drive และทำให้เป็นลิงก์สาธารณะ
