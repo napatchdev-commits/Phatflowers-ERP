@@ -285,8 +285,9 @@ function updateSpreadsheetSheets(data) {
   // 2. อัปเดตชีตข้อมูลลูกค้า (Customers)
   updateCustomersSheet(ss, data.customers || []);
   
-  // 3. อัปเดตชีตรายการบริการ (Catalog)
+  // 3. อัปเดตชีตรายการบริการ (Catalog งานแต่ง และ CatalogOrdination งานบวช)
   updateCatalogSheet(ss, data.catalog || []);
+  updateCatalogOrdinationSheet(ss, data.catalog || []);
   
   // 4. อัปเดตชีตเอกสาร (Documents)
   updateDocumentsSheet(ss, data.documents || []);
@@ -374,12 +375,46 @@ function updateCatalogSheet(ss, catalog) {
        .setBackground("#2dd4bf")
        .setFontColor("#ffffff");
   
-  if (catalog.length > 0) {
-    const rows = catalog.map(item => [
+  // กรองเฉพาะสินค้างานแต่งงาน
+  const weddingCatalog = catalog.filter(item => item && item.eventType !== 'ordination');
+  
+  if (weddingCatalog.length > 0) {
+    const rows = weddingCatalog.map(item => [
       item.id || "",
       item.description || "",
       item.unitPrice || 0,
-      item.eventType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'
+      "งานแต่งงาน"
+    ]);
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+    // จัดรูปแบบคอลัมน์ราคาเป็นตัวเลขการเงิน
+    sheet.getRange(2, 3, rows.length, 1).setNumberFormat("#,##0.00");
+  }
+  sheet.autoResizeColumns(1, headers.length);
+}
+
+function updateCatalogOrdinationSheet(ss, catalog) {
+  let sheet = ss.getSheetByName("CatalogOrdination");
+  if (!sheet) {
+    sheet = ss.insertSheet("CatalogOrdination");
+  }
+  sheet.clear();
+  
+  const headers = ["ID", "รายการสินค้า/บริการ", "ราคาต่อหน่วย (บาท)", "ประเภทงาน"];
+  sheet.getRange(1, 1, 1, headers.length)
+       .setValues([headers])
+       .setFontWeight("bold")
+       .setBackground("#cca43b")
+       .setFontColor("#ffffff");
+  
+  // กรองเฉพาะสินค้างานบวช
+  const ordinationCatalog = catalog.filter(item => item && item.eventType === 'ordination');
+  
+  if (ordinationCatalog.length > 0) {
+    const rows = ordinationCatalog.map(item => [
+      item.id || "",
+      item.description || "",
+      item.unitPrice || 0,
+      "งานบวช"
     ]);
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
     // จัดรูปแบบคอลัมน์ราคาเป็นตัวเลขการเงิน
