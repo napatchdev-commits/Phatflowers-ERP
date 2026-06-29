@@ -28,7 +28,7 @@ function doPost(e) {
       let db = null;
       try {
         const file = getOrCreateDatabaseFile();
-        const content = file.getContentText();
+        const content = file.getBlob().getDataAsString();
         db = content && content !== "{}" ? JSON.parse(content) : null;
       } catch (fileErr) {
         Logger.log("Error loading database file: " + fileErr.toString());
@@ -90,7 +90,7 @@ function doPost(e) {
       // Send LINE notification to staff if configured
       try {
         const file = getOrCreateDatabaseFile();
-        const content = file.getContentText();
+        const content = file.getBlob().getDataAsString();
         if (content && content !== "{}") {
           const db = JSON.parse(content);
           const settings = db.settings || {};
@@ -142,7 +142,7 @@ function doPost(e) {
           name: f.getName(),
           size: f.getSize(),
           lastUpdated: f.getLastUpdated().toString(),
-          content: f.getContentText()
+          content: f.getBlob().getDataAsString()
         });
       }
       return responseJSON({ status: 'success', files: list });
