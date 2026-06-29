@@ -78,6 +78,60 @@ function doPost(e) {
         return responseJSON({ status: 'error', message: lineStatus });
       }
       
+    } else if (action === 'createDraftRequest') {
+      const requestPayload = requestData.data;
+      if (!requestPayload) {
+        return responseJSON({ status: 'error', message: 'No request data provided' });
+      }
+      
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sheetResult = addDraftRequestToSheet(ss, requestPayload);
+      
+      // Send LINE notification to staff if configured
+      try {
+        const file = getOrCreateDatabaseFile();
+        const content = file.getContentText();
+        if (content && content !== "{}") {
+          const db = JSON.parse(content);
+          const settings = db.settings || {};
+          const token = settings.lineChannelAccessToken || settings.lineNotifyToken;
+          const toId = settings.lineUserId;
+          
+          if (token && toId) {
+            let msg = `🔔 มีใบแจ้งข้อมูลความสนใจจัดงานใหม่เข้ามา!\n`;
+            msg += `👤 ลูกค้า: ${requestPayload.customerName}\n`;
+            msg += `📞 เบอร์โทร: ${requestPayload.phone}\n`;
+            msg += `📅 วันจัดงาน: ${requestPayload.eventDate}\n`;
+            msg += `📍 สถานที่: ${requestPayload.eventLocation}\n`;
+            if (requestPayload.notes) {
+              msg += `📝 หมายเหตุ: ${requestPayload.notes}\n`;
+            }
+            msg += `\n📦 รายการที่สนใจ:\n`;
+            
+            const selectedItems = requestPayload.items || [];
+            let hasCustomPrice = false;
+            selectedItems.forEach((item) => {
+              const priceText = item.unitPrice > 0 ? `${item.unitPrice.toLocaleString('th-TH')} บาท` : `สอบถามราคา`;
+              msg += `- ${item.qty}x ${item.description} (${priceText})\n`;
+              if (item.unitPrice === 0) hasCustomPrice = true;
+            });
+            
+            if (hasCustomPrice) {
+              const startText = requestPayload.totalPrice > 0 ? `เริ่มต้น ${requestPayload.totalPrice.toLocaleString('th-TH')} บาท (มีรายการรอเสนอราคา)` : `รอเสนอราคา`;
+              msg += `\n💰 ยอดรวมประมาณการ: ${startText}`;
+            } else {
+              msg += `\n💰 ยอดรวมประมาณการ: ${requestPayload.totalPrice.toLocaleString('th-TH')} บาท`;
+            }
+            
+            sendLineMessage(token, toId, msg, null);
+          }
+        }
+      } catch (lineErr) {
+        Logger.log("Error sending line notification for draft request: " + lineErr.toString());
+      }
+      
+      return responseJSON({ status: 'success', message: 'Inquiry registered successfully', requestId: sheetResult.requestId });
+      
     } else {
       return responseJSON({ status: 'error', message: 'Invalid action: ' + action });
     }
@@ -200,6 +254,12 @@ function updateSpreadsheetSheets(data) {
   
   // 4. อัปเดตชีตเอกสาร (Documents)
   updateDocumentsSheet(ss, data.documents || []);
+  
+  // 5. อัปเดตชีตแพ็กเกจจัดงาน (Packages)
+  updatePackagesSheet(ss, data.packages || []);
+  
+  // 6. อัปเดตชีตโปรโมชัน (Promotions)
+  updatePromotionsSheet(ss, data.promotions || []);
 }
 
 function updateSettingsSheet(ss, settings) {
@@ -340,6 +400,119 @@ function updateDocumentsSheet(ss, documents) {
     
     // จัดรูปแบบคอลัมน์เงิน
     sheet.getRange(2, 9, rows.length, 3).setNumberFormat("#,##0.00");
+  }
+  sheet.autoResizeColumns(1, headers.length);
+}
+
+// ฟังก์ชันเพิ่มข้อมูลใบขอเสนอราคาแบบร่างของลูกค้าลงชีต DraftRequests
+function addDraftRequestToSheet(ss, payload) {
+  let sheet = ss.getSheetByName("DraftRequests");
+  if (!sheet) {
+    sheet = ss.insertSheet("DraftRequests");
+  }
+  
+  const headers = [
+    "ID คำขอ", "วันที่ยื่นคำขอ", "ชื่อลูกค้า", "เบอร์โทรศัพท์", 
+    "วันจัดงาน", "สถานที่จัดงาน", "รายการที่เลือก", "ยอดรวมสุทธิ (บาท)", "หมายเหตุ", "สถานะ"
+  ];
+  
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, headers.length)
+         .setValues([headers])
+         .setFontWeight("bold")
+         .setBackground("#fb7185")
+         .setFontColor("#ffffff");
+  }
+  
+  const requestId = "REQ-" + Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd") + "-" + Math.floor(1000 + Math.random() * 9000);
+  
+  let hasCustomPrice = false;
+  const itemsText = (payload.items || []).map(item => {
+    if (item.unitPrice === 0) hasCustomPrice = true;
+    return `${item.qty}x ${item.description} (${item.unitPrice > 0 ? item.unitPrice + ' บ.' : 'สอบถามราคา'})`;
+  }).join(', ');
+  
+  let finalNotes = payload.notes || "";
+  if (hasCustomPrice) {
+    finalNotes = finalNotes ? finalNotes + " | (มีรายการรอประเมินราคาเพิ่มเติม)" : "(มีรายการรอประเมินราคาเพิ่มเติม)";
+  }
+  
+  const row = [
+    requestId,
+    Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss"),
+    payload.customerName || "",
+    payload.phone || "",
+    payload.eventDate || "",
+    payload.eventLocation || "",
+    itemsText,
+    payload.totalPrice || 0,
+    finalNotes,
+    "สนใจติดต่อกลับ"
+  ];
+  
+  sheet.appendRow(row);
+  
+  const lastRow = sheet.getLastRow();
+  sheet.getRange(lastRow, 8).setNumberFormat("#,##0.00");
+  sheet.autoResizeColumns(1, headers.length);
+  
+  return { requestId: requestId };
+}
+
+// ฟังก์ชันอัปเดตชีตแพ็กเกจจัดงาน (Packages)
+function updatePackagesSheet(ss, packages) {
+  let sheet = ss.getSheetByName("Packages");
+  if (!sheet) {
+    sheet = ss.insertSheet("Packages");
+  }
+  sheet.clear();
+  
+  const headers = ["ID", "ชื่อแพ็กเกจ", "ราคา (บาท)", "ป้ายกำกับ", "รายการบริการที่รวม (แยกด้วยเครื่องหมายจุลภาค ,)", "ไฮไลต์เด่น (yes/no)"];
+  sheet.getRange(1, 1, 1, headers.length)
+       .setValues([headers])
+       .setFontWeight("bold")
+       .setBackground("#2dd4bf")
+       .setFontColor("#ffffff");
+       
+  if (packages.length > 0) {
+    const rows = packages.map(pkg => [
+      pkg.id || "",
+      pkg.name || "",
+      pkg.price || 0,
+      pkg.badge || "",
+      Array.isArray(pkg.items) ? pkg.items.join(', ') : (pkg.items || ""),
+      pkg.isHighlighted ? "yes" : "no"
+    ]);
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+    sheet.getRange(2, 3, rows.length, 1).setNumberFormat("#,##0.00");
+  }
+  sheet.autoResizeColumns(1, headers.length);
+}
+
+// ฟังก์ชันอัปเดตชีตโปรโมชัน (Promotions)
+function updatePromotionsSheet(ss, promotions) {
+  let sheet = ss.getSheetByName("Promotions");
+  if (!sheet) {
+    sheet = ss.insertSheet("Promotions");
+  }
+  sheet.clear();
+  
+  const headers = ["ID", "หัวข้อโปรโมชัน", "รายละเอียด", "ป้ายกำกับ", "ธีมสี (primary/secondary)"];
+  sheet.getRange(1, 1, 1, headers.length)
+       .setValues([headers])
+       .setFontWeight("bold")
+       .setBackground("#2dd4bf")
+       .setFontColor("#ffffff");
+       
+  if (promotions.length > 0) {
+    const rows = promotions.map(p => [
+      p.id || "",
+      p.title || "",
+      p.description || "",
+      p.badge || "",
+      p.type || "primary"
+    ]);
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
   sheet.autoResizeColumns(1, headers.length);
 }
