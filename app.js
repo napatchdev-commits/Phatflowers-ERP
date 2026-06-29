@@ -132,7 +132,7 @@ function loadDB() {
             // Ensure all collections exist in case of schema updates
             if (!state.db.settings) state.db.settings = { ...DEFAULT_DB.settings };
             if (state.db.settings) {
-                if ((state.db.settings.googleSheetsUrl === undefined || state.db.settings.googleSheetsUrl === '') && GOOGLE_SHEETS_DATABASE_URL) {
+                if (GOOGLE_SHEETS_DATABASE_URL && state.db.settings.googleSheetsUrl !== GOOGLE_SHEETS_DATABASE_URL) {
                     state.db.settings.googleSheetsUrl = GOOGLE_SHEETS_DATABASE_URL;
                 }
                 if (state.db.settings.promptPayNo === undefined) state.db.settings.promptPayNo = '';
