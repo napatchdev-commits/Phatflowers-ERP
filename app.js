@@ -1697,15 +1697,17 @@ function renderA4Preview() {
             </tr>
         `;
     } else {
+        let displayIndex = 1;
         doc.items.forEach((item, index) => {
             const isZeroPrice = (item.unitPrice || 0) === 0;
+            const indexText = isZeroPrice ? "" : displayIndex++;
             const qtyText = isZeroPrice ? "" : (item.qty || 1);
             const priceText = isZeroPrice ? "" : formatCurrency(item.unitPrice);
             const totalText = isZeroPrice ? "" : formatCurrency((item.qty || 1) * item.unitPrice);
             
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="col-index">${index + 1}</td>
+                <td class="col-index">${indexText}</td>
                 <td class="col-desc">${item.description || '-'}</td>
                 <td class="col-qty">${qtyText}</td>
                 <td class="col-price">${priceText}</td>
