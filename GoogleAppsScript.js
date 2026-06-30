@@ -118,8 +118,21 @@ function doPost(e) {
             msg += `\n📦 รายการที่สนใจ:\n`;
             
             selectedItems.forEach((item) => {
-              const priceText = item.unitPrice > 0 ? `${item.unitPrice.toLocaleString('th-TH')} บาท` : `สอบถามราคา`;
-              msg += `- ${item.qty}x ${item.description} (${priceText})\n`;
+              msg += `- ${item.qty}x ${item.description}\n`;
+              
+              // ดึงรายละเอียดสินค้าด้านในแพ็กเกจมาโชว์ในข้อความไลน์ด้วย
+              if (item.id && item.id.indexOf("pkg") !== -1) {
+                const packageDb = (db.packages || []).find(p => p.id === item.id);
+                if (packageDb && packageDb.items) {
+                  const packageItems = Array.isArray(packageDb.items)
+                    ? packageDb.items
+                    : packageDb.items.split(',').map(i => i.trim()).filter(i => i.length > 0);
+                  
+                  if (packageItems.length > 0) {
+                    msg += `   💐 ประกอบด้วย: ${packageItems.join(', ')}\n`;
+                  }
+                }
+              }
             });
             
             if (hasCustomPrice) {
