@@ -1223,7 +1223,8 @@ textarea.form-control {
         margin: 0 !important;
         padding: 0 !important;
         width: 21cm !important;
-        height: 29.7cm !important;
+        height: auto !important;
+        min-height: 29.7cm !important;
         overflow: visible !important;
     }
     
@@ -1238,8 +1239,8 @@ textarea.form-control {
     .app-wrapper {
         display: block !important;
         width: 21cm !important;
-        height: 29.7cm !important;
-        min-height: auto !important;
+        height: auto !important;
+        min-height: 29.7cm !important;
         overflow: visible !important;
         padding: 0 !important;
         margin: 0 !important;
@@ -1250,7 +1251,8 @@ textarea.form-control {
         margin: 0 !important;
         max-width: 21cm !important;
         width: 21cm !important;
-        height: 29.7cm !important;
+        height: auto !important;
+        min-height: 29.7cm !important;
         overflow: visible !important;
         display: block !important;
     }
@@ -1258,14 +1260,16 @@ textarea.form-control {
     .tab-content.active {
         display: block !important;
         width: 21cm !important;
-        height: 29.7cm !important;
+        height: auto !important;
+        min-height: 29.7cm !important;
         overflow: visible !important;
     }
 
     .generator-layout {
         display: block !important;
         width: 21cm !important;
-        height: 29.7cm !important;
+        height: auto !important;
+        min-height: 29.7cm !important;
         overflow: visible !important;
     }
 
@@ -1277,7 +1281,8 @@ textarea.form-control {
         overflow: visible !important;
         max-height: none !important;
         width: 21cm !important;
-        height: 29.7cm !important;
+        height: auto !important;
+        min-height: 29.7cm !important;
     }
     
     /* Display ONLY the document preview */
@@ -1287,15 +1292,19 @@ textarea.form-control {
         box-shadow: none !important;
         border: none !important;
         margin: 0 !important;
-        padding: 0.8cm !important;
+        padding: 1.2cm 1cm !important;
         width: 21cm !important;
-        height: 29.7cm !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
+        height: auto !important;
+        min-height: 29.7cm !important;
+        position: relative !important;
         box-sizing: border-box !important;
-        page-break-after: avoid;
-        page-break-inside: avoid;
+        overflow: visible !important;
+        page-break-after: auto;
+    }
+    
+    /* Avoid breaking rows inside table */
+    .a4-table tr {
+        page-break-inside: avoid !important;
     }
     
     /* Ensure background colors print exactly as set */
