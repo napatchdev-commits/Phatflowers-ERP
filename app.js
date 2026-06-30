@@ -76,7 +76,9 @@ const DEFAULT_DB = {
         managerPosition: "ผู้จัดการ",
         googleSheetsUrl: GOOGLE_SHEETS_DATABASE_URL,
         lineChannelAccessToken: "",
-        lineUserId: ""
+        lineUserId: "",
+        manychatToken: "",
+        manychatFlowId: ""
     },
     customers: [
         {
@@ -2140,6 +2142,8 @@ function renderSettings() {
     document.getElementById('set-sheets-url').value = s.googleSheetsUrl || '';
     document.getElementById('set-line-token').value = s.lineChannelAccessToken || '';
     document.getElementById('set-line-userid').value = s.lineUserId || '';
+    document.getElementById('set-manychat-token').value = s.manychatToken || '';
+    document.getElementById('set-manychat-flowid').value = s.manychatFlowId || '';
 }
 
 function saveSettings() {
@@ -2163,6 +2167,8 @@ function saveSettings() {
     s.googleSheetsUrl = document.getElementById('set-sheets-url').value.trim();
     s.lineChannelAccessToken = document.getElementById('set-line-token').value.trim();
     s.lineUserId = document.getElementById('set-line-userid').value.trim();
+    s.manychatToken = document.getElementById('set-manychat-token').value.trim();
+    s.manychatFlowId = document.getElementById('set-manychat-flowid').value.trim();
     
     saveDB();
     alert("บันทึกการตั้งค่าเริ่มต้นเรียบร้อยแล้ว!");
