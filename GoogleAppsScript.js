@@ -87,15 +87,24 @@ function doPost(e) {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       const sheetResult = addDraftRequestToSheet(ss, requestPayload);
       
-      // Send LINE notification to staff if configured
+      // Send notifications to LINE & ManyChat if configured
       try {
         const file = getOrCreateDatabaseFile();
         const content = file.getBlob().getDataAsString();
         if (content && content !== "{}") {
           const db = JSON.parse(content);
           const settings = db.settings || {};
+          
+          // --- LINE Notification to Staff ---
           const token = settings.lineChannelAccessToken || settings.lineNotifyToken;
           const toId = settings.lineUserId;
+          
+          const selectedItems = requestPayload.items || [];
+          let hasCustomPrice = false;
+          let itemsText = selectedItems.map((item) => {
+            if (item.unitPrice === 0) hasCustomPrice = true;
+            return `${item.qty}x ${item.description} (${item.unitPrice > 0 ? item.unitPrice + ' บ.' : 'สอบถามราคา'})`;
+          }).join(', ');
           
           if (token && toId) {
             let msg = `🔔 มีใบแจ้งข้อมูลความสนใจจัดงานใหม่เข้ามา!\n`;
@@ -108,12 +117,9 @@ function doPost(e) {
             }
             msg += `\n📦 รายการที่สนใจ:\n`;
             
-            const selectedItems = requestPayload.items || [];
-            let hasCustomPrice = false;
             selectedItems.forEach((item) => {
               const priceText = item.unitPrice > 0 ? `${item.unitPrice.toLocaleString('th-TH')} บาท` : `สอบถามราคา`;
               msg += `- ${item.qty}x ${item.description} (${priceText})\n`;
-              if (item.unitPrice === 0) hasCustomPrice = true;
             });
             
             if (hasCustomPrice) {
@@ -125,9 +131,33 @@ function doPost(e) {
             
             sendLineMessage(token, toId, msg, null);
           }
+          
+          // --- ManyChat Messenger Notification to Customer ---
+          const mcToken = settings.manychatToken;
+          const mcFlowId = settings.manychatFlowId;
+          const subscriberId = requestPayload.manychatUserId;
+          
+          if (mcToken && subscriberId) {
+            let mcTotalText = "";
+            if (hasCustomPrice) {
+              mcTotalText = requestPayload.totalPrice > 0 ? `เริ่มต้น ${requestPayload.totalPrice.toLocaleString('th-TH')} บาท (มีรายการรอเสนอราคา)` : `รอเสนอราคา`;
+            } else {
+              mcTotalText = `${requestPayload.totalPrice.toLocaleString('th-TH')} บาท`;
+            }
+            
+            const fields = {
+              "pf_quote_id": sheetResult.requestId || "",
+              "pf_quote_total": mcTotalText,
+              "pf_quote_items": itemsText.substring(0, 250), // ManyChat text field length safe check
+              "pf_event_date": requestPayload.eventDate || "",
+              "pf_event_location": requestPayload.eventLocation || ""
+            };
+            
+            sendManyChatFlow(mcToken, subscriberId, mcFlowId, fields);
+          }
         }
-      } catch (lineErr) {
-        Logger.log("Error sending line notification for draft request: " + lineErr.toString());
+      } catch (err) {
+        Logger.log("Error sending notifications: " + err.toString());
       }
       
       return responseJSON({ status: 'success', message: 'Inquiry registered successfully', requestId: sheetResult.requestId });
@@ -487,7 +517,7 @@ function addDraftRequestToSheet(ss, payload) {
   
   const headers = [
     "ID คำขอ", "วันที่ยื่นคำขอ", "ชื่อลูกค้า", "เบอร์โทรศัพท์", 
-    "วันจัดงาน", "สถานที่จัดงาน", "รายการที่เลือก", "ยอดรวมสุทธิ (บาท)", "หมายเหตุ", "สถานะ"
+    "วันจัดงาน", "สถานที่จัดงาน", "รายการที่เลือก", "ยอดรวมสุทธิ (บาท)", "หมายเหตุ", "สถานะ", "ManyChat User ID"
   ];
   
   if (sheet.getLastRow() === 0) {
@@ -521,7 +551,8 @@ function addDraftRequestToSheet(ss, payload) {
     itemsText,
     payload.totalPrice || 0,
     finalNotes,
-    "สนใจติดต่อกลับ"
+    "สนใจติดต่อกลับ",
+    payload.manychatUserId || ""
   ];
   
   sheet.appendRow(row);
@@ -661,4 +692,57 @@ function updatePromotionsOrdinationSheet(ss, promotions) {
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
   sheet.autoResizeColumns(1, headers.length);
+}
+
+// ฟังก์ชันสำหรับเชื่อมต่อ ManyChat API เพื่อตั้งค่าฟิลด์และสั่งยิง Flow หาลูกค้า
+function sendManyChatFlow(token, subscriberId, flowId, fields) {
+  try {
+    if (!token || !subscriberId) return;
+    
+    const headers = {
+      "Authorization": "Bearer " + token,
+      "Content-Type": "application/json"
+    };
+    
+    // 1. ส่งค่า Custom Fields
+    if (fields && Object.keys(fields).length > 0) {
+      for (const fieldName in fields) {
+        try {
+          const payload = {
+            "subscriber_id": Number(subscriberId),
+            "field_name": fieldName,
+            "field_value": fields[fieldName]
+          };
+          
+          UrlFetchApp.fetch("https://api.manychat.com/fb/subscriber/setCustomFieldByName", {
+            "method": "POST",
+            "headers": headers,
+            "payload": JSON.stringify(payload),
+            "muteHttpExceptions": true
+          });
+        } catch (fieldErr) {
+          Logger.log("Error setting ManyChat custom field " + fieldName + ": " + fieldErr.toString());
+        }
+      }
+    }
+    
+    // 2. สั่งเปิดยิง Flow
+    if (flowId) {
+      const flowPayload = {
+        "subscriber_id": Number(subscriberId),
+        "flow_ns": flowId
+      };
+      
+      const response = UrlFetchApp.fetch("https://api.manychat.com/fb/sending/sendFlow", {
+        "method": "POST",
+        "headers": headers,
+        "payload": JSON.stringify(flowPayload),
+        "muteHttpExceptions": true
+      });
+      
+      Logger.log("ManyChat sendFlow response: " + response.getContentText());
+    }
+  } catch (err) {
+    Logger.log("Error in sendManyChatFlow: " + err.toString());
+  }
 }
