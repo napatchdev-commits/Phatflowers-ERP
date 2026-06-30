@@ -1680,6 +1680,11 @@ function renderA4Preview() {
     // Event details (Conditional display or '-' if empty)
     document.getElementById('p-event-date').textContent = parseThaiDate(doc.eventDate) || '-';
     document.getElementById('p-event-location').textContent = doc.eventLocation || '-';
+    
+    // Show event details only for Quotation (quotation) and hide for Receipt (receipt) & Delivery Slip (delivery)
+    const isQuotation = doc.docType === 'quotation';
+    document.getElementById('p-row-event-date').style.display = isQuotation ? '' : 'none';
+    document.getElementById('p-row-event-location').style.display = isQuotation ? '' : 'none';
 
     // Render Preview Table
     const tableBody = document.querySelector('#a4-items-table tbody');
