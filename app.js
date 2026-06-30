@@ -735,10 +735,15 @@ function renderCatalog(searchTerm = '') {
     }
 
     filtered.forEach(item => {
+        const showStatus = item.showOnCatalog !== false 
+            ? `<span style="color: #2d6a4f; background: rgba(45, 106, 79, 0.1); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fa-solid fa-eye"></i> แสดง</span>` 
+            : `<span style="color: #64748b; background: rgba(100, 116, 139, 0.1); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fa-solid fa-eye-slash"></i> ซ่อน</span>`;
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td style="font-weight: 600;">${item.description}</td>
             <td style="font-family: 'Inter', sans-serif; font-weight: 600;">฿${formatCurrency(item.unitPrice)}</td>
+            <td>${showStatus}</td>
             <td>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-secondary btn-sm" onclick="openCatalogModal('${item.id}')"><i class="fas fa-edit"></i> แก้ไข</button>
@@ -764,9 +769,11 @@ function openCatalogModal(id = null) {
         if (item) {
             document.getElementById('catalog-form-desc').value = item.description;
             document.getElementById('catalog-form-price').value = item.unitPrice;
+            document.getElementById('catalog-form-show').checked = item.showOnCatalog !== false;
         }
     } else {
         title.textContent = `เพิ่มบริการใหม่ (${state.activeCatalogType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
+        document.getElementById('catalog-form-show').checked = true;
     }
     
     modal.style.display = 'flex';
@@ -780,6 +787,7 @@ function saveCatalogForm() {
     const id = state.editingCatalogId;
     const description = document.getElementById('catalog-form-desc').value.trim();
     const unitPrice = parseFloat(document.getElementById('catalog-form-price').value) || 0;
+    const showOnCatalog = document.getElementById('catalog-form-show').checked;
     
     if (!description) {
         alert("กรุณากรอกรายละเอียดสินค้าหรือบริการ");
@@ -790,14 +798,15 @@ function saveCatalogForm() {
         const index = state.db.catalog.findIndex(c => c.id === id);
         if (index !== -1) {
             const eventType = state.db.catalog[index].eventType || state.activeCatalogType || 'wedding';
-            state.db.catalog[index] = { ...state.db.catalog[index], description, unitPrice, eventType };
+            state.db.catalog[index] = { ...state.db.catalog[index], description, unitPrice, eventType, showOnCatalog };
         }
     } else {
         const newItem = {
             id: 'cat-' + Date.now(),
             description, 
             unitPrice,
-            eventType: state.activeCatalogType || 'wedding'
+            eventType: state.activeCatalogType || 'wedding',
+            showOnCatalog
         };
         state.db.catalog.push(newItem);
     }
