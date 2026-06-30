@@ -400,7 +400,7 @@ function updateCatalogSheet(ss, catalog) {
   }
   sheet.clear();
   
-  const headers = ["ID", "รายการสินค้า/บริการ", "ราคาต่อหน่วย (บาท)", "ประเภทงาน"];
+  const headers = ["ID", "รายการสินค้า/บริการ", "ราคาต่อหน่วย (บาท)", "ประเภทงาน", "แสดงหน้าลูกค้า"];
   sheet.getRange(1, 1, 1, headers.length)
        .setValues([headers])
        .setFontWeight("bold")
@@ -415,7 +415,8 @@ function updateCatalogSheet(ss, catalog) {
       item.id || "",
       item.description || "",
       item.unitPrice || 0,
-      "งานแต่งงาน"
+      "งานแต่งงาน",
+      item.showOnCatalog !== false ? "ใช่" : "ไม่ใช่"
     ]);
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
     // จัดรูปแบบคอลัมน์ราคาเป็นตัวเลขการเงิน
@@ -431,7 +432,7 @@ function updateCatalogOrdinationSheet(ss, catalog) {
   }
   sheet.clear();
   
-  const headers = ["ID", "รายการสินค้า/บริการ", "ราคาต่อหน่วย (บาท)", "ประเภทงาน"];
+  const headers = ["ID", "รายการสินค้า/บริการ", "ราคาต่อหน่วย (บาท)", "ประเภทงาน", "แสดงหน้าลูกค้า"];
   sheet.getRange(1, 1, 1, headers.length)
        .setValues([headers])
        .setFontWeight("bold")
@@ -446,7 +447,8 @@ function updateCatalogOrdinationSheet(ss, catalog) {
       item.id || "",
       item.description || "",
       item.unitPrice || 0,
-      "งานบวช"
+      "งานบวช",
+      item.showOnCatalog !== false ? "ใช่" : "ไม่ใช่"
     ]);
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
     // จัดรูปแบบคอลัมน์ราคาเป็นตัวเลขการเงิน
