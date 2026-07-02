@@ -370,6 +370,9 @@ function updateSettingsSheet(ss, settings) {
     ["เบอร์พร้อมเพย์", settings.promptPayNo || ""],
     ["ผู้จัดการ", settings.managerName || ""],
     ["ตำแหน่ง", settings.managerPosition || ""],
+    ["Google Sheets Web App URL", settings.googleSheetsUrl || ""],
+    ["LINE Channel Access Token", settings.lineChannelAccessToken || ""],
+    ["LINE User ID", settings.lineUserId || ""],
     ["อัปเดตล่าสุดเมื่อ", Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss")]
   ];
   
