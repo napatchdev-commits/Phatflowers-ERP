@@ -151,12 +151,12 @@ function loadDB() {
             if (!state.db.promotions) state.db.promotions = JSON.parse(JSON.stringify(DEFAULT_DB.promotions));
         } catch (e) {
             console.error("Error parsing local database. Resetting to defaults.", e);
-            state.db = { ...DEFAULT_DB };
-            saveDB();
+            state.db = JSON.parse(JSON.stringify(DEFAULT_DB));
+            localStorage.setItem('phatflowers_erp_db', JSON.stringify(state.db));
         }
     } else {
         state.db = JSON.parse(JSON.stringify(DEFAULT_DB)); // Deep clone
-        saveDB();
+        localStorage.setItem('phatflowers_erp_db', JSON.stringify(state.db));
     }
 }
 
