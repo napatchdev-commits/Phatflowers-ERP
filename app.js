@@ -2709,27 +2709,23 @@ function renderBackofficeGallery() {
 
 function openGalleryModal() {
     const activeType = state.activeGalleryType || 'wedding';
-    const container = document.getElementById('gallery-form-cat-buttons');
+    const select = document.getElementById('gallery-form-cat');
     
-    // Render dynamic instant upload buttons
-    if (container) {
-        container.innerHTML = '';
+    // Dynamic Select options loaded immediately
+    if (select) {
+        select.innerHTML = '';
         const cats = GALLERY_CATEGORIES[activeType] || [];
         cats.forEach(c => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn btn-primary';
-            btn.style.cssText = 'padding: 10px; font-size: 13px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;';
-            btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> ${c}`;
-            btn.onclick = () => saveGalleryItemDirectly(c);
-            container.appendChild(btn);
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.innerText = c;
+            select.appendChild(opt);
         });
     }
     
     document.getElementById('gallery-form-file').value = '';
     document.getElementById('gallery-image-preview-container').style.display = 'none';
     document.getElementById('gallery-image-preview').src = '';
-    document.getElementById('gallery-upload-buttons-container').style.display = 'none';
     document.getElementById('gallery-modal').style.display = 'flex';
 }
 
@@ -2746,22 +2742,19 @@ function previewGalleryImage(event) {
             const previewImg = document.getElementById('gallery-image-preview');
             previewImg.src = e.target.result;
             previewContainer.style.display = 'block';
-            
-            // Show category select buttons container after file selected
-            const buttonsContainer = document.getElementById('gallery-upload-buttons-container');
-            if (buttonsContainer) {
-                buttonsContainer.style.display = 'block';
-            }
         };
         reader.readAsDataURL(input.files[0]);
     }
 }
 
-function saveGalleryItemDirectly(category) {
+function saveGalleryItem(event) {
+    event.preventDefault();
+    
+    const cat = document.getElementById('gallery-form-cat').value;
     const fileInput = document.getElementById('gallery-form-file');
     
     if (!fileInput.files || !fileInput.files[0]) {
-        alert("กรุณาเลือกไฟล์รูปภาพก่อนครับ");
+        alert("กรุณาเลือกไฟล์รูปภาพที่ต้องการอัปโหลด");
         return;
     }
     
@@ -2797,7 +2790,7 @@ function saveGalleryItemDirectly(category) {
                 const newItem = {
                     id: 'gal-' + Date.now(),
                     eventType: state.activeGalleryType || 'wedding',
-                    category: category,
+                    category: cat,
                     imageUrl: res.imageUrl
                 };
                 

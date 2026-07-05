@@ -280,7 +280,7 @@ function saveBase64ImageToDrive(base64DataStr) {
   
   // ดึง Direct link สำหรับแสดงภาพ
   const fileId = file.getId();
-  return "https://drive.google.com/uc?export=download&id=" + fileId;
+  return "https://lh3.googleusercontent.com/d/" + fileId;
 }
 
 // ฟังก์ชันส่งข้อความพร้อมรูปภาพเข้าห้องแชท LINE
