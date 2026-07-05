@@ -92,9 +92,13 @@
                     <i class="fa-solid fa-gift"></i>
                     <span>โปรโมชันงานบวช</span>
                 </a>
-                <a href="#" class="menu-item" data-tab="gallery">
+                <a href="#" class="menu-item" data-tab="gallery-wedding">
                     <i class="fa-solid fa-images"></i>
-                    <span>แกลลอรีรูปภาพ</span>
+                    <span>แกลลอรีงานแต่งงาน</span>
+                </a>
+                <a href="#" class="menu-item" data-tab="gallery-ordination">
+                    <i class="fa-solid fa-images"></i>
+                    <span>แกลลอรีงานบวช</span>
                 </a>
                 <a href="#" class="menu-item" data-tab="settings">
                     <i class="fa-solid fa-sliders"></i>
@@ -877,10 +881,8 @@
                 </div>
                 
                 <div class="card">
-                    <div class="gallery-filters" style="margin-bottom: 20px; display: flex; gap: 10px;">
-                        <button class="btn btn-secondary btn-sm gallery-filter-btn active" id="gallery-filter-all" onclick="filterBackofficeGallery('all')">ทั้งหมด</button>
-                        <button class="btn btn-secondary btn-sm gallery-filter-btn" id="gallery-filter-wedding" onclick="filterBackofficeGallery('wedding')">งานแต่งงาน</button>
-                        <button class="btn btn-secondary btn-sm gallery-filter-btn" id="gallery-filter-ordination" onclick="filterBackofficeGallery('ordination')">งานบวช</button>
+                    <div class="gallery-filters" id="backoffice-gallery-filters" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px;">
+                        <!-- Rendered dynamically in app.js -->
                     </div>
                     
                     <div class="gallery-grid-admin" id="backoffice-gallery-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
@@ -1053,10 +1055,9 @@
             
             <form id="gallery-modal-form" onsubmit="saveGalleryItem(event)">
                 <div class="form-group">
-                    <label for="gallery-form-cat">หมวดหมู่งาน (จำเป็น)</label>
+                    <label for="gallery-form-cat">หมวดหมู่รูปภาพ (จำเป็น)</label>
                     <select id="gallery-form-cat" class="form-control" required style="height: 38px;">
-                        <option value="wedding">งานแต่งงาน (Wedding)</option>
-                        <option value="ordination">งานบวช (Ordination)</option>
+                        <!-- Dynamic options based on Event Type -->
                     </select>
                 </div>
                 

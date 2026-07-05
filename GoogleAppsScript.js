@@ -788,7 +788,7 @@ function updateGallerySheet(ss, gallery) {
   }
   sheet.clear();
   
-  const headers = ["ID", "หมวดหมู่ (wedding/ordination)", "ลิงก์รูปภาพ"];
+  const headers = ["ID", "ประเภทงาน (wedding/ordination)", "หมวดหมู่ย่อย", "ลิงก์รูปภาพ"];
   sheet.getRange(1, 1, 1, headers.length)
        .setValues([headers])
        .setFontWeight("bold")
@@ -798,6 +798,7 @@ function updateGallerySheet(ss, gallery) {
   if (gallery.length > 0) {
     const rows = gallery.map(item => [
       item.id || "",
+      item.eventType || (item.category === 'ordination' ? 'ordination' : 'wedding'),
       item.category || "",
       item.imageUrl || ""
     ]);

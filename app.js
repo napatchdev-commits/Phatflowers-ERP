@@ -334,11 +334,18 @@ function navigate(tabId) {
     } else if (tabId === 'promotions-ordination') {
         state.activePromotionType = 'ordination';
         targetTabId = 'promotions';
+    } else if (tabId === 'gallery-wedding') {
+        state.activeGalleryType = 'wedding';
+        targetTabId = 'gallery';
+    } else if (tabId === 'gallery-ordination') {
+        state.activeGalleryType = 'ordination';
+        targetTabId = 'gallery';
     } else {
         // Reset if clicking other tabs
         state.activeCatalogType = 'wedding';
         state.activePackageType = 'wedding';
         state.activePromotionType = 'wedding';
+        state.activeGalleryType = 'wedding';
     }
 
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -366,7 +373,7 @@ function navigate(tabId) {
         renderPackages();
     } else if (tabId === 'promotions-wedding' || tabId === 'promotions-ordination' || tabId === 'promotions') {
         renderPromotions();
-    } else if (tabId === 'gallery') {
+    } else if (tabId === 'gallery-wedding' || tabId === 'gallery-ordination' || tabId === 'gallery') {
         initGalleryPage();
     }
 }
@@ -2573,6 +2580,26 @@ function sendDocumentToLineBot() {
    GALLERY MANAGEMENT
    ========================================================================== */
 state.activeGalleryFilter = 'all';
+state.activeGalleryType = 'wedding';
+
+const GALLERY_CATEGORIES = {
+    wedding: [
+        'พิธีสงฆ์',
+        'ฉากพิธีรับไหว้/สวมแหวน/หลั่งน้ำสังข์',
+        'ฉากงานเลี้ยง',
+        'โต๊ะลงทะเบียน',
+        'ฉากเวที',
+        'มุมแกลอรี่',
+        'ฉากรับปริญญา',
+        'ฉากถ่ายรูปอื่นๆ'
+    ],
+    ordination: [
+        'ชุดพิธีสงฆ์',
+        'ฉากวางเครื่องบวช',
+        'ฉากปลงผม/อาบน้ำนาค',
+        'ฉากถ่ายรูปงานเลี้ยง'
+    ]
+};
 
 function initGalleryPage() {
     // Hook add button
@@ -2582,8 +2609,34 @@ function initGalleryPage() {
         addBtn.dataset.listener = 'true';
     }
     
-    // Make sure state filter is set
-    state.activeGalleryFilter = state.activeGalleryFilter || 'all';
+    // Set dynamic tab title and description based on active event type
+    const titleEl = document.querySelector('#gallery-tab .page-title');
+    const subtitleEl = document.querySelector('#gallery-tab .page-subtitle');
+    const activeType = state.activeGalleryType || 'wedding';
+    
+    if (titleEl) {
+        titleEl.innerText = `จัดการแกลลอรีรูปภาพ (${activeType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
+    }
+    if (subtitleEl) {
+        subtitleEl.innerText = `อัปโหลด ลบ และจัดการรูปภาพผลงานของ${activeType === 'ordination' ? 'งานอุปสมบท' : 'งานมงคลสมรส'}ตามหมวดหมู่เพื่อแสดงผลหน้าเว็บลูกค้า`;
+    }
+    
+    // Render dynamic filters
+    const filtersContainer = document.getElementById('backoffice-gallery-filters');
+    if (filtersContainer) {
+        const cats = GALLERY_CATEGORIES[activeType] || [];
+        let html = `<button class="btn btn-secondary btn-sm gallery-filter-btn ${state.activeGalleryFilter === 'all' ? 'active' : ''}" onclick="filterBackofficeGallery('all')">ทั้งหมด</button>`;
+        cats.forEach(c => {
+            html += `<button class="btn btn-secondary btn-sm gallery-filter-btn ${state.activeGalleryFilter === c ? 'active' : ''}" onclick="filterBackofficeGallery('${c}')">${c}</button>`;
+        });
+        filtersContainer.innerHTML = html;
+    }
+    
+    // Make sure active filter is either 'all' or in the categories list, else reset
+    const activeCats = GALLERY_CATEGORIES[activeType] || [];
+    if (state.activeGalleryFilter !== 'all' && !activeCats.includes(state.activeGalleryFilter)) {
+        state.activeGalleryFilter = 'all';
+    }
     
     renderBackofficeGallery();
 }
@@ -2591,18 +2644,14 @@ function initGalleryPage() {
 function filterBackofficeGallery(category) {
     state.activeGalleryFilter = category;
     
-    // Update filter buttons UI
+    // Update active class on filter buttons
     document.querySelectorAll('.gallery-filter-btn').forEach(btn => {
-        btn.classList.remove('active');
+        if (btn.innerText.trim() === category || (category === 'all' && btn.innerText.trim() === 'ทั้งหมด')) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     });
-    
-    if (category === 'all') {
-        document.getElementById('gallery-filter-all').classList.add('active');
-    } else if (category === 'wedding') {
-        document.getElementById('gallery-filter-wedding').classList.add('active');
-    } else if (category === 'ordination') {
-        document.getElementById('gallery-filter-ordination').classList.add('active');
-    }
     
     renderBackofficeGallery();
 }
@@ -2615,7 +2664,13 @@ function renderBackofficeGallery() {
     
     if (!state.db.gallery) state.db.gallery = [];
     
+    const activeType = state.activeGalleryType || 'wedding';
+    
+    // Filter by Event Type AND active Category Filter
     const filtered = state.db.gallery.filter(item => {
+        const itemType = item.eventType || (item.category === 'ordination' ? 'ordination' : 'wedding');
+        if (itemType !== activeType) return false;
+        
         if (state.activeGalleryFilter === 'all') return true;
         return item.category === state.activeGalleryFilter;
     });
@@ -2624,8 +2679,8 @@ function renderBackofficeGallery() {
         container.innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">
                 <i class="fa-solid fa-images" style="font-size: 48px; margin-bottom: 12px; color: var(--gray-300);"></i>
-                <p>ยังไม่มีรูปภาพผลงานในแกลลอรี</p>
-                <p style="font-size: 12px; margin-top: 4px;">กดปุ่ม "เพิ่มรูปภาพใหม่" ด้านบนเพื่อเริ่มอัปโหลดรูปภาพผลงานของคุณ</p>
+                <p>ยังไม่มีรูปภาพผลงานในแกลลอรีนี้</p>
+                <p style="font-size: 12px; margin-top: 4px;">กดปุ่ม "เพิ่มรูปภาพใหม่" ด้านบนเพื่อเริ่มอัปโหลดรูปภาพในหมวดหมู่นี้</p>
             </div>
         `;
         return;
@@ -2636,13 +2691,12 @@ function renderBackofficeGallery() {
         card.className = 'gallery-card-admin';
         card.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #fff; position: relative; box-shadow: var(--shadow-sm); transition: transform 0.2s;';
         
-        const catLabel = item.category === 'wedding' ? 'งานแต่งงาน' : 'งานบวช';
-        const catColor = item.category === 'wedding' ? 'var(--rose-600)' : 'var(--primary)';
+        const catColor = activeType === 'wedding' ? 'var(--rose-600)' : 'var(--primary)';
         
         card.innerHTML = `
             <div style="position: relative; padding-top: 75%; background: var(--gray-100); overflow: hidden;">
                 <img src="${item.imageUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
-                <span style="position: absolute; left: 8px; top: 8px; background: ${catColor}; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500;">${catLabel}</span>
+                <span style="position: absolute; left: 8px; top: 8px; background: ${catColor}; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500;">${item.category}</span>
             </div>
             <div style="padding: 10px; display: flex; justify-content: flex-end;">
                 <button class="btn btn-danger btn-sm" onclick="deleteGalleryItem('${item.id}')" style="padding: 4px 8px; font-size: 12px;"><i class="fa-solid fa-trash-can"></i> ลบรูปภาพ</button>
@@ -2654,6 +2708,21 @@ function renderBackofficeGallery() {
 }
 
 function openGalleryModal() {
+    const activeType = state.activeGalleryType || 'wedding';
+    const select = document.getElementById('gallery-form-cat');
+    
+    // Dynamic Select options
+    if (select) {
+        select.innerHTML = '';
+        const cats = GALLERY_CATEGORIES[activeType] || [];
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.innerText = c;
+            select.appendChild(opt);
+        });
+    }
+    
     document.getElementById('gallery-form-file').value = '';
     document.getElementById('gallery-image-preview-container').style.display = 'none';
     document.getElementById('gallery-image-preview').src = '';
@@ -2720,6 +2789,7 @@ function saveGalleryItem(event) {
             if (res.status === 'success' && res.imageUrl) {
                 const newItem = {
                     id: 'gal-' + Date.now(),
+                    eventType: state.activeGalleryType || 'wedding',
                     category: cat,
                     imageUrl: res.imageUrl
                 };
