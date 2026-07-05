@@ -175,6 +175,18 @@ function doPost(e) {
       
       return responseJSON({ status: 'success', message: 'Inquiry registered successfully', requestId: sheetResult.requestId });
       
+    } else if (action === 'uploadImage') {
+      const base64Data = requestData.image;
+      if (!base64Data) {
+        return responseJSON({ status: 'error', message: 'No image data provided' });
+      }
+      try {
+        const imageUrl = saveBase64ImageToDrive(base64Data);
+        return responseJSON({ status: 'success', imageUrl: imageUrl });
+      } catch (err) {
+        return responseJSON({ status: 'error', message: 'Failed to upload image: ' + err.toString() });
+      }
+      
     } else if (action === 'debugFetch') {
       const files = DriveApp.getFilesByName("phatflowers_db_backup.json");
       const list = [];
@@ -342,6 +354,9 @@ function updateSpreadsheetSheets(data) {
   // 6. อัปเดตชีตโปรโมชัน (Promotions งานแต่ง และ PromotionsOrdination งานบวช)
   updatePromotionsSheet(ss, data.promotions || []);
   updatePromotionsOrdinationSheet(ss, data.promotions || []);
+  
+  // 7. อัปเดตชีตแกลลอรีรูปภาพ (Gallery)
+  updateGallerySheet(ss, data.gallery || []);
 }
 
 function updateSettingsSheet(ss, settings) {
@@ -763,4 +778,30 @@ function sendManyChatFlow(token, subscriberId, flowId, fields) {
   } catch (err) {
     Logger.log("Error in sendManyChatFlow: " + err.toString());
   }
+}
+
+// ฟังก์ชันอัปเดตชีตแกลลอรีรูปภาพ (Gallery)
+function updateGallerySheet(ss, gallery) {
+  let sheet = ss.getSheetByName("Gallery");
+  if (!sheet) {
+    sheet = ss.insertSheet("Gallery");
+  }
+  sheet.clear();
+  
+  const headers = ["ID", "หมวดหมู่ (wedding/ordination)", "ลิงก์รูปภาพ"];
+  sheet.getRange(1, 1, 1, headers.length)
+       .setValues([headers])
+       .setFontWeight("bold")
+       .setBackground("#2dd4bf")
+       .setFontColor("#ffffff");
+  
+  if (gallery.length > 0) {
+    const rows = gallery.map(item => [
+      item.id || "",
+      item.category || "",
+      item.imageUrl || ""
+    ]);
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+  sheet.autoResizeColumns(1, headers.length);
 }

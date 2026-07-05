@@ -117,7 +117,8 @@ const DEFAULT_DB = {
     promotions: [
         { id: "promo-1", title: "โปรจองล่วงหน้า 60 วันขึ้นไป", description: "รับส่วนลดทันที 10% สำหรับแพ็กเกจงานแต่งงาน และฟรีช่อดอกไม้เจ้าสาวมูลค่า 1,500 บาท", badge: "Hot", type: "primary" },
         { id: "promo-2", title: "ฟรี! สแตนด์ดอกไม้ทางเดิน 1 คู่", description: "เมื่อมียอดจองจัดงานแต่งงานรวมตั้งแต่ 35,000 บาทขึ้นไป (พร้อมบริการส่งฟรีในระยะ 30 กม.)", badge: "พิเศษ", type: "secondary" }
-    ]
+    ],
+    gallery: []
 };
 
 /* ==========================================================================
@@ -149,6 +150,7 @@ function loadDB() {
             if (!state.db.documents) state.db.documents = [];
             if (!state.db.packages) state.db.packages = JSON.parse(JSON.stringify(DEFAULT_DB.packages));
             if (!state.db.promotions) state.db.promotions = JSON.parse(JSON.stringify(DEFAULT_DB.promotions));
+            if (!state.db.gallery) state.db.gallery = [];
         } catch (e) {
             console.error("Error parsing local database. Resetting to defaults.", e);
             state.db = JSON.parse(JSON.stringify(DEFAULT_DB));
@@ -225,6 +227,7 @@ function initialCloudSync() {
             if (data.documents) state.db.documents = data.documents;
             if (data.packages) state.db.packages = data.packages;
             if (data.promotions) state.db.promotions = data.promotions;
+            if (data.gallery) state.db.gallery = data.gallery;
             if (data.settings) {
                 const currentUrl = state.db.settings.googleSheetsUrl;
                 state.db.settings = { ...state.db.settings, ...data.settings };
@@ -363,6 +366,8 @@ function navigate(tabId) {
         renderPackages();
     } else if (tabId === 'promotions-wedding' || tabId === 'promotions-ordination' || tabId === 'promotions') {
         renderPromotions();
+    } else if (tabId === 'gallery') {
+        initGalleryPage();
     }
 }
 
@@ -2292,6 +2297,7 @@ function syncPullData(showSuccessAlert = false) {
                 if (data.documents) state.db.documents = data.documents;
                 if (data.packages) state.db.packages = data.packages;
                 if (data.promotions) state.db.promotions = data.promotions;
+                if (data.gallery) state.db.gallery = data.gallery;
                 if (data.settings) {
                     const currentUrl = state.db.settings.googleSheetsUrl;
                     state.db.settings = { ...state.db.settings, ...data.settings };
@@ -2561,4 +2567,193 @@ function sendDocumentToLineBot() {
             alert("ไม่สามารถติดต่อ Cloud App Script ได้: " + err.message);
         });
     });
+}
+
+/* ==========================================================================
+   GALLERY MANAGEMENT
+   ========================================================================== */
+state.activeGalleryFilter = 'all';
+
+function initGalleryPage() {
+    // Hook add button
+    const addBtn = document.getElementById('btn-add-gallery-item');
+    if (addBtn && !addBtn.dataset.listener) {
+        addBtn.addEventListener('click', openGalleryModal);
+        addBtn.dataset.listener = 'true';
+    }
+    
+    // Make sure state filter is set
+    state.activeGalleryFilter = state.activeGalleryFilter || 'all';
+    
+    renderBackofficeGallery();
+}
+
+function filterBackofficeGallery(category) {
+    state.activeGalleryFilter = category;
+    
+    // Update filter buttons UI
+    document.querySelectorAll('.gallery-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (category === 'all') {
+        document.getElementById('gallery-filter-all').classList.add('active');
+    } else if (category === 'wedding') {
+        document.getElementById('gallery-filter-wedding').classList.add('active');
+    } else if (category === 'ordination') {
+        document.getElementById('gallery-filter-ordination').classList.add('active');
+    }
+    
+    renderBackofficeGallery();
+}
+
+function renderBackofficeGallery() {
+    const container = document.getElementById('backoffice-gallery-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!state.db.gallery) state.db.gallery = [];
+    
+    const filtered = state.db.gallery.filter(item => {
+        if (state.activeGalleryFilter === 'all') return true;
+        return item.category === state.activeGalleryFilter;
+    });
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">
+                <i class="fa-solid fa-images" style="font-size: 48px; margin-bottom: 12px; color: var(--gray-300);"></i>
+                <p>ยังไม่มีรูปภาพผลงานในแกลลอรี</p>
+                <p style="font-size: 12px; margin-top: 4px;">กดปุ่ม "เพิ่มรูปภาพใหม่" ด้านบนเพื่อเริ่มอัปโหลดรูปภาพผลงานของคุณ</p>
+            </div>
+        `;
+        return;
+    }
+    
+    filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'gallery-card-admin';
+        card.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #fff; position: relative; box-shadow: var(--shadow-sm); transition: transform 0.2s;';
+        
+        const catLabel = item.category === 'wedding' ? 'งานแต่งงาน' : 'งานบวช';
+        const catColor = item.category === 'wedding' ? 'var(--rose-600)' : 'var(--primary)';
+        
+        card.innerHTML = `
+            <div style="position: relative; padding-top: 75%; background: var(--gray-100); overflow: hidden;">
+                <img src="${item.imageUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+                <span style="position: absolute; left: 8px; top: 8px; background: ${catColor}; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500;">${catLabel}</span>
+            </div>
+            <div style="padding: 10px; display: flex; justify-content: flex-end;">
+                <button class="btn btn-danger btn-sm" onclick="deleteGalleryItem('${item.id}')" style="padding: 4px 8px; font-size: 12px;"><i class="fa-solid fa-trash-can"></i> ลบรูปภาพ</button>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+function openGalleryModal() {
+    document.getElementById('gallery-form-file').value = '';
+    document.getElementById('gallery-image-preview-container').style.display = 'none';
+    document.getElementById('gallery-image-preview').src = '';
+    document.getElementById('gallery-modal').style.display = 'flex';
+}
+
+function closeGalleryModal() {
+    document.getElementById('gallery-modal').style.display = 'none';
+}
+
+function previewGalleryImage(event) {
+    const input = event.target;
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewContainer = document.getElementById('gallery-image-preview-container');
+            const previewImg = document.getElementById('gallery-image-preview');
+            previewImg.src = e.target.result;
+            previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function saveGalleryItem(event) {
+    event.preventDefault();
+    
+    const cat = document.getElementById('gallery-form-cat').value;
+    const fileInput = document.getElementById('gallery-form-file');
+    
+    if (!fileInput.files || !fileInput.files[0]) {
+        alert("กรุณาเลือกไฟล์รูปภาพที่ต้องการอัปโหลด");
+        return;
+    }
+    
+    const url = state.db.settings.googleSheetsUrl;
+    if (!url) {
+        alert("⚠️ โปรดเชื่อมต่อระบบคลาวด์ก่อนการอัปโหลดแกลลอรีรูปภาพ:\nกรุณากรอก Google Sheets Web App URL ในหน้าตั้งค่าและบันทึกก่อนครับ");
+        return;
+    }
+    
+    showLoadingOverlay('กำลังอัปโหลดรูปภาพลง Google Drive...');
+    
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const base64Data = e.target.result;
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8'
+            },
+            body: JSON.stringify({
+                action: 'uploadImage',
+                image: base64Data
+            })
+        })
+        .then(response => response.json())
+        .then(res => {
+            hideLoadingOverlay();
+            
+            if (res.status === 'success' && res.imageUrl) {
+                const newItem = {
+                    id: 'gal-' + Date.now(),
+                    category: cat,
+                    imageUrl: res.imageUrl
+                };
+                
+                if (!state.db.gallery) state.db.gallery = [];
+                state.db.gallery.push(newItem);
+                
+                saveDB(true); // Save locally and push database updates to cloud
+                closeGalleryModal();
+                renderBackofficeGallery();
+                alert("อัปโหลดและเพิ่มรูปภาพสำเร็จแล้ว!");
+            } else {
+                hideLoadingOverlay();
+                console.error("Image upload response error:", res);
+                alert("เกิดข้อผิดพลาดในการอัปโหลด: " + (res.message || 'ไม่ทราบสาเหตุ'));
+            }
+        })
+        .catch(err => {
+            hideLoadingOverlay();
+            console.error("Image upload network error:", err);
+            alert("ไม่สามารถติดต่อเซิร์ฟเวอร์อัปโหลดได้: " + err.message);
+        });
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+function deleteGalleryItem(id) {
+    const item = state.db.gallery.find(g => g.id === id);
+    if (!item) return;
+    
+    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรูปภาพผลงานนี้ออกจากระบบ?")) {
+        state.db.gallery = state.db.gallery.filter(g => g.id !== id);
+        saveDB(true); // Save and sync
+        renderBackofficeGallery();
+    }
 }
