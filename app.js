@@ -1672,7 +1672,13 @@ function renderA4Preview() {
     
     // Company Header
     document.getElementById('p-comp-name').textContent = settings.companyName;
-    document.getElementById('p-comp-addr').textContent = settings.address;
+    let formattedAddr = settings.address || '';
+    if (formattedAddr.includes('จังหวัด')) {
+        formattedAddr = formattedAddr.replace('จังหวัด', '<br>จังหวัด');
+    } else if (formattedAddr.includes('จ.')) {
+        formattedAddr = formattedAddr.replace('จ.', '<br>จ.');
+    }
+    document.getElementById('p-comp-addr').innerHTML = formattedAddr;
     document.getElementById('p-comp-taxid').textContent = settings.taxId;
     document.getElementById('p-comp-phone').textContent = settings.phones;
     document.getElementById('p-comp-email').textContent = settings.email;
