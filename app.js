@@ -1662,7 +1662,7 @@ function renderA4Preview() {
     // Determine headers based on type
     const typeTitles = {
         quotation: { th: 'ใบเสนอราคา', en: 'Quotation' },
-        receipt: { th: 'ใบเสร็จรับเงิน', en: 'Receipt' },
+        receipt: { th: 'ใบเสร็จรับเงิน', en: '(ต้นฉบับ/Original) Receipt' },
         delivery: { th: 'ใบส่งสินค้า / ใบแจ้งหนี้', en: 'Delivery Order / Invoice' }
     };
     const titles = typeTitles[doc.docType] || typeTitles.quotation;

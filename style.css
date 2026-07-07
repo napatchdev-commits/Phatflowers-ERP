@@ -668,6 +668,23 @@ textarea.form-control {
     color: var(--accent-receipt);
 }
 
+/* Swapped header columns only for Receipt document type */
+.a4-document.type-receipt .a4-header {
+    flex-direction: row-reverse;
+}
+.a4-document.type-receipt .a4-header-left {
+    text-align: right;
+}
+.a4-document.type-receipt .a4-company-details {
+    text-align: right;
+}
+.a4-document.type-receipt .a4-header-right {
+    text-align: left;
+}
+.a4-document.type-receipt .a4-doc-number {
+    text-align: left;
+}
+
 .a4-document.type-delivery .a4-doc-title,
 .a4-document.type-delivery .a4-doc-subtitle {
     color: var(--accent-delivery);
