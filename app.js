@@ -2209,9 +2209,26 @@ function saveSettings() {
     s.manychatToken = document.getElementById('set-manychat-token').value.trim();
     s.manychatFlowId = document.getElementById('set-manychat-flowid').value.trim();
     
-    saveDB();
-    alert("บันทึกการตั้งค่าเริ่มต้นเรียบร้อยแล้ว!");
-    renderDashboard();
+    // บันทึกข้อมูลลงเครื่องทันทีก่อน
+    localStorage.setItem('phatflowers_erp_db', JSON.stringify(state.db));
+    
+    if (s.googleSheetsUrl) {
+        showLoadingOverlay('กำลังบันทึกและซิงก์ข้อมูลไปคลาวด์...');
+        syncPushData(true)
+        .then(() => {
+            hideLoadingOverlay();
+            alert("บันทึกการตั้งค่าเริ่มต้นและซิงก์ลงคลาวด์สำเร็จแล้ว!");
+            renderDashboard();
+        })
+        .catch(err => {
+            hideLoadingOverlay();
+            alert("⚠️ ไม่สามารถซิงก์ข้อมูลลงคลาวด์ได้ชั่วคราว:\n" + err.toString() + "\n\n(ระบบบันทึกการตั้งค่าลงบนเบราว์เซอร์เครื่องนี้สำเร็จแล้ว)");
+            renderDashboard();
+        });
+    } else {
+        alert("บันทึกการตั้งค่าเริ่มต้นเรียบร้อยแล้ว (เฉพาะเครื่องนี้)!");
+        renderDashboard();
+    }
 }
 
 /* Backup Import / Export */
@@ -2340,14 +2357,14 @@ function syncPullData(showSuccessAlert = false) {
 let syncTimeout = null;
 function syncPushData(immediate = false) {
     const url = state.db.settings.googleSheetsUrl;
-    if (!url) return;
+    if (!url) return Promise.resolve();
     
     updateSyncStatus('connecting', 'กำลังซิงก์ขึ้นคลาวด์...');
     
     if (syncTimeout) clearTimeout(syncTimeout);
     
     const runSync = () => {
-        fetch(url, {
+        return fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'text/plain;charset=utf-8'
@@ -2361,21 +2378,25 @@ function syncPushData(immediate = false) {
         .then(res => {
             if (res.status === 'success') {
                 updateSyncStatus('success', 'เชื่อมต่อ Google Sheets แล้ว');
+                return res;
             } else {
                 console.error("Sync push error response:", res.message);
                 updateSyncStatus('error', 'ซิงก์ขึ้นคลาวด์ล้มเหลว');
+                throw new Error(res.message || 'Server error during syncAll');
             }
         })
         .catch(err => {
             console.error("Sync push connection error:", err);
             updateSyncStatus('error', 'เชื่อมต่อคลาวด์ล้มเหลว');
+            throw err;
         });
     };
 
     if (immediate) {
-        runSync();
+        return runSync();
     } else {
         syncTimeout = setTimeout(runSync, 1200);
+        return Promise.resolve();
     }
 }
 
