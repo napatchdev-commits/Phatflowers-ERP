@@ -78,7 +78,11 @@ const DEFAULT_DB = {
         lineChannelAccessToken: "",
         lineUserId: "",
         manychatToken: "",
-        manychatFlowId: ""
+        manychatFlowId: "",
+        signatures: [
+            { id: 'sig-default', name: 'คุณธนภัทร (ค่าเริ่มต้น)', base64: DEFAULT_SIGNATURE }
+        ],
+        activeSignatureId: 'sig-default'
     },
     customers: [
         {
@@ -144,6 +148,14 @@ function loadDB() {
                     state.db.settings.lineChannelAccessToken = state.db.settings.lineNotifyToken || '';
                 }
                 if (state.db.settings.lineUserId === undefined) state.db.settings.lineUserId = '';
+                if (state.db.settings.signatures === undefined || !Array.isArray(state.db.settings.signatures)) {
+                    state.db.settings.signatures = [
+                        { id: 'sig-default', name: 'คุณธนภัทร (ค่าเริ่มต้น)', base64: DEFAULT_SIGNATURE }
+                    ];
+                }
+                if (state.db.settings.activeSignatureId === undefined) {
+                    state.db.settings.activeSignatureId = 'sig-default';
+                }
             }
             if (!state.db.customers) state.db.customers = [];
             if (!state.db.catalog) state.db.catalog = [];
@@ -1198,6 +1210,12 @@ function initDocGeneratorPage() {
     bindField('editor-manager-name', 'managerName');
     bindField('editor-manager-pos', 'managerPosition');
     
+    // Select signature change binding
+    document.getElementById('editor-document-signature').addEventListener('change', (e) => {
+        state.currentDoc.signatureId = e.target.value;
+        updateCalculationsAndPreview();
+    });
+    
     // PromptPay and QR Code bindings
     bindField('editor-promptpay-no', 'promptPayNo');
     setupQRUploadHandler('editor-qrcode-file', 'editor-qrcode-base64', 'editor-qrcode-preview-container', 'editor-qrcode-preview', (base64) => {
@@ -1434,6 +1452,7 @@ function renderDocumentGenerator() {
     
     document.getElementById('editor-manager-name').value = state.currentDoc.managerName;
     document.getElementById('editor-manager-pos').value = state.currentDoc.managerPosition;
+    populateEditorSignatureSelect();
 
     // Show/hide LINE Auto send button depending on whether token is configured
     const lineBtn = document.getElementById('btn-send-line-auto');
@@ -1850,6 +1869,21 @@ function renderA4Preview() {
         sigTitleElement.textContent = 'ผู้ส่งสินค้า / ผู้ติดตั้ง';
         sigNameElement.textContent = doc.managerName || 'ธนภัทร ชัยบำรุง';
     }
+
+    // Render Signature Image
+    const sigImgElement = document.getElementById('p-sig-img');
+    if (sigImgElement) {
+        const sigId = doc.signatureId || settings.activeSignatureId || 'sig-default';
+        const signatureObj = (settings.signatures || []).find(s => s.id === sigId) || (settings.signatures || [])[0];
+        
+        if (signatureObj && signatureObj.base64) {
+            sigImgElement.src = signatureObj.base64;
+            sigImgElement.style.display = 'block';
+        } else {
+            sigImgElement.src = '';
+            sigImgElement.style.display = 'none';
+        }
+    }
     
     // Render Signature Date
     const sigDateSpan = document.getElementById('p-sig-date');
@@ -2151,6 +2185,60 @@ function initSettingsPage() {
         }
         syncPullData(true);
     });
+
+    // Default signature button listener
+    document.getElementById('btn-add-default-sig').addEventListener('click', () => {
+        const signatures = state.db.settings.signatures || [];
+        const hasDefault = signatures.some(s => s.id === 'sig-default');
+        if (!hasDefault) {
+            signatures.push({
+                id: 'sig-default',
+                name: 'คุณธนภัทร (ค่าเริ่มต้น)',
+                base64: DEFAULT_SIGNATURE
+            });
+            saveDB();
+            renderSettingsSignaturesList();
+            alert("เพิ่มลายเซ็นเริ่มต้นของคุณธนภัทรเข้าระบบเรียบร้อยแล้ว!");
+        } else {
+            alert("ลายเซ็นเริ่มต้นของคุณธนภัทรอยู่ในระบบอยู่แล้ว");
+        }
+    });
+
+    // Signature upload listener
+    document.getElementById('set-signature-file').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                // Strip background and convert to PNG base64
+                const transparentBase64 = makeImageTransparent(img, 220);
+                
+                // Prompt for name
+                const name = prompt("กรุณาระบุชื่อเจ้าของลายเซ็นนี้ (เช่น คุณธนภัทร, คุณสมศรี):", "ลายเซ็นใหม่");
+                if (name && name.trim()) {
+                    const signatures = state.db.settings.signatures || [];
+                    const newSig = {
+                        id: 'sig-' + Date.now(),
+                        name: name.trim(),
+                        base64: transparentBase64
+                    };
+                    signatures.push(newSig);
+                    state.db.settings.activeSignatureId = newSig.id;
+                    saveDB();
+                    renderSettingsSignaturesList();
+                    alert(`บันทึกลายเซ็น "${name.trim()}" และตั้งเป็นลายเซ็นหลักเรียบร้อยแล้ว!`);
+                }
+                
+                // Reset file input
+                document.getElementById('set-signature-file').value = '';
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 function renderSettings() {
@@ -2183,6 +2271,8 @@ function renderSettings() {
     document.getElementById('set-line-userid').value = s.lineUserId || '';
     document.getElementById('set-manychat-token').value = s.manychatToken || '';
     document.getElementById('set-manychat-flowid').value = s.manychatFlowId || '';
+    
+    renderSettingsSignaturesList();
 }
 
 function saveSettings() {
@@ -2853,4 +2943,120 @@ function deleteGalleryItem(id) {
         saveDB(true); // Save and sync
         renderBackofficeGallery();
     }
+}
+
+/* ==========================================================================
+   SIGNATURE UTILITIES
+   ========================================================================== */
+function makeImageTransparent(imgElement, threshold = 220) {
+    const canvas = document.createElement('canvas');
+    canvas.width = imgElement.naturalWidth || imgElement.width;
+    canvas.height = imgElement.naturalHeight || imgElement.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgElement, 0, 0);
+    
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i+1];
+        const b = data[i+2];
+        if (r > threshold && g > threshold && b > threshold) {
+            data[i+3] = 0; // alpha = 0 (transparent)
+        }
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+    return canvas.toDataURL('image/png');
+}
+
+function populateEditorSignatureSelect() {
+    const select = document.getElementById('editor-document-signature');
+    if (!select) return;
+    
+    select.innerHTML = '';
+    const signatures = state.db.settings.signatures || [];
+    
+    signatures.forEach(sig => {
+        const option = document.createElement('option');
+        option.value = sig.id;
+        option.textContent = sig.name;
+        select.appendChild(option);
+    });
+    
+    const selectedId = state.currentDoc.signatureId || state.db.settings.activeSignatureId || 'sig-default';
+    select.value = selectedId;
+    state.currentDoc.signatureId = selectedId;
+}
+
+function renderSettingsSignaturesList() {
+    const listContainer = document.getElementById('set-signatures-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    const signatures = state.db.settings.signatures || [];
+    const activeId = state.db.settings.activeSignatureId || 'sig-default';
+    
+    if (signatures.length === 0) {
+        listContainer.innerHTML = '<div style="font-size:12px; color:#a0aec0; text-align:center; padding:10px;">ไม่มีลายเซ็นในระบบ</div>';
+        return;
+    }
+    
+    signatures.forEach(sig => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0; border-radius:4px; padding:8px 12px; background:#fff;';
+        
+        const left = document.createElement('div');
+        left.style.cssText = 'display:flex; align-items:center; gap:8px;';
+        
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'set-active-sig';
+        radio.value = sig.id;
+        radio.checked = sig.id === activeId;
+        radio.addEventListener('change', () => {
+            state.db.settings.activeSignatureId = sig.id;
+            saveDB();
+        });
+        
+        const nameText = document.createElement('span');
+        nameText.textContent = sig.name;
+        nameText.style.cssText = 'font-size:12px; font-weight:600;';
+        
+        left.appendChild(radio);
+        left.appendChild(nameText);
+        
+        const right = document.createElement('div');
+        right.style.cssText = 'display:flex; align-items:center; gap:12px;';
+        
+        const img = document.createElement('img');
+        img.src = sig.base64;
+        img.style.cssText = 'height:30px; max-width:80px; object-fit:contain; border:1px solid #edf2f7; border-radius:2px; background:#fff;';
+        
+        right.appendChild(img);
+        
+        if (signatures.length > 1) {
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            delBtn.className = 'btn btn-danger btn-sm';
+            delBtn.style.cssText = 'padding:2px 6px; font-size:11px;';
+            delBtn.addEventListener('click', () => {
+                if (confirm(`คุณต้องการลบลายเซ็น "${sig.name}" หรือไม่?`)) {
+                    state.db.settings.signatures = state.db.settings.signatures.filter(s => s.id !== sig.id);
+                    if (state.db.settings.activeSignatureId === sig.id) {
+                        state.db.settings.activeSignatureId = state.db.settings.signatures[0].id;
+                    }
+                    saveDB();
+                    renderSettingsSignaturesList();
+                }
+            });
+            right.appendChild(delBtn);
+        }
+        
+        item.appendChild(left);
+        item.appendChild(right);
+        listContainer.appendChild(item);
+    });
 }

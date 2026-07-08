@@ -376,14 +376,20 @@
                                 <img id="editor-qrcode-preview" src="" style="width:60px; height:60px; object-fit:contain; border:1px solid var(--border-color); border-radius:4px; background:#fff;">
                                 <button type="button" class="btn btn-danger btn-sm" id="btn-remove-editor-qrcode" style="padding: 2px 8px;">ลบรูปภาพ</button>
                             </div>
-                            <div class="grid-2">
+                            <div class="grid-3">
                                 <div class="form-group">
-                                    <label for="editor-manager-name">ชื่อผู้มีอำนาจลงนาม / ลงลายมือชื่อ</label>
+                                    <label for="editor-manager-name">ชื่อผู้ลงนาม</label>
                                     <input type="text" id="editor-manager-name" class="form-control">
                                 </div>
                                 <div class="form-group">
                                     <label for="editor-manager-pos">ตำแหน่งงาน</label>
                                     <input type="text" id="editor-manager-pos" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editor-document-signature">เลือกลายเซ็น</label>
+                                    <select id="editor-document-signature" class="form-control">
+                                        <!-- Loaded dynamically -->
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -538,7 +544,12 @@
                                     </div>
                                     
                                     <div class="a4-signature-box">
-                                        <div class="a4-signature-line"></div>
+                                        <div style="position: relative; height: 50px; margin-bottom: 8px; width: 100%;">
+                                            <!-- Img overlay -->
+                                            <img id="p-sig-img" src="" alt="ลายเซ็น" style="display: none; height: 60px; max-width: 150px; object-fit: contain; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); z-index: 2;">
+                                            <!-- Line -->
+                                            <div class="a4-signature-line" style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); margin: 0; width: 180px;"></div>
+                                        </div>
                                         <div class="a4-signature-name" id="p-sig-name">ธนภัทร ชัยบำรุง</div>
                                         <div class="a4-signature-title" id="p-sig-title">ผู้จัดการ</div>
                                         <div class="a4-signature-date" id="p-sig-date-row">วันที่ / Date: <span id="p-sig-date">-</span></div>
@@ -820,6 +831,25 @@
                                         <input type="text" id="set-manager-pos" class="form-control">
                                     </div>
                                 </div>
+                                
+                                <div class="form-group" style="margin-top: 15px;">
+                                    <label>ระบบจัดการลายเซ็นดิจิทัล</label>
+                                    <div style="display:flex; flex-direction:column; gap:10px; border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; background: #fafafa;">
+                                        <!-- File uploader -->
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <input type="file" id="set-signature-file" class="form-control" accept="image/*" style="flex-grow:1;">
+                                            <button type="button" class="btn btn-secondary" id="btn-add-default-sig" style="white-space:nowrap; padding: 8px 12px; font-size:12px;">ใช้ลายเซ็นคุณธนภัทร</button>
+                                        </div>
+                                        <div style="font-size:11px; color:#718096; margin-top:-5px;">
+                                            *ระบบจะลบพื้นหลังสีขาวออกให้เป็นไฟล์โปร่งใส (PNG) ให้อัตโนมัติเมื่ออัปโหลด
+                                        </div>
+                                        
+                                        <!-- Signatures List -->
+                                        <div id="set-signatures-list" style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+                                            <!-- Rendered dynamically in app.js -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="card">
@@ -1085,6 +1115,7 @@
     <!-- JavaScript Files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="thaiBaht.js"></script>
+    <script src="defaultSignature.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
