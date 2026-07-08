@@ -1873,15 +1873,21 @@ function renderA4Preview() {
     // Render Signature Image
     const sigImgElement = document.getElementById('p-sig-img');
     if (sigImgElement) {
-        const sigId = doc.signatureId || settings.activeSignatureId || 'sig-default';
-        const signatureObj = (settings.signatures || []).find(s => s.id === sigId) || (settings.signatures || [])[0];
+        const sigId = doc.signatureId !== undefined ? doc.signatureId : (settings.activeSignatureId || 'sig-default');
         
-        if (signatureObj && signatureObj.base64) {
-            sigImgElement.src = signatureObj.base64;
-            sigImgElement.style.display = 'block';
-        } else {
+        if (sigId === 'none') {
             sigImgElement.src = '';
             sigImgElement.style.display = 'none';
+        } else {
+            const signatureObj = (settings.signatures || []).find(s => s.id === sigId) || (settings.signatures || [])[0];
+            
+            if (signatureObj && signatureObj.base64) {
+                sigImgElement.src = signatureObj.base64;
+                sigImgElement.style.display = 'block';
+            } else {
+                sigImgElement.src = '';
+                sigImgElement.style.display = 'none';
+            }
         }
     }
     
@@ -2976,6 +2982,13 @@ function populateEditorSignatureSelect() {
     if (!select) return;
     
     select.innerHTML = '';
+    
+    // Option for no signature
+    const noneOption = document.createElement('option');
+    noneOption.value = 'none';
+    noneOption.textContent = 'ไม่ใส่ลายเซ็น (No Signature)';
+    select.appendChild(noneOption);
+    
     const signatures = state.db.settings.signatures || [];
     
     signatures.forEach(sig => {
@@ -2985,7 +2998,8 @@ function populateEditorSignatureSelect() {
         select.appendChild(option);
     });
     
-    const selectedId = state.currentDoc.signatureId || state.db.settings.activeSignatureId || 'sig-default';
+    // Determine selected ID
+    const selectedId = state.currentDoc.signatureId !== undefined ? state.currentDoc.signatureId : (state.db.settings.activeSignatureId || 'sig-default');
     select.value = selectedId;
     state.currentDoc.signatureId = selectedId;
 }
