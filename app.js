@@ -2746,6 +2746,55 @@ function initGalleryPage() {
         });
         addBtn.dataset.listener = 'true';
     }
+
+    // Hook sync button to sync gallery images from Google Drive
+    const syncGalleryBtn = document.getElementById('btn-sync-gallery');
+    if (syncGalleryBtn && !syncGalleryBtn.dataset.listener) {
+        syncGalleryBtn.addEventListener('click', () => {
+            const url = state.db.settings.googleSheetsUrl;
+            if (!url) {
+                alert("กรุณาตั้งค่า URL Google Sheets ในระบบก่อนทำการซิงก์");
+                return;
+            }
+            
+            const loadingOverlay = document.getElementById('cloud-loading-overlay');
+            const loaderMessage = document.getElementById('loader-message');
+            if (loadingOverlay && loaderMessage) {
+                loaderMessage.innerText = "กำลังซิงก์รูปภาพจาก Google Drive...";
+                loadingOverlay.style.display = 'flex';
+            }
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify({ action: 'syncGallery' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                
+                if (data && data.status === 'success') {
+                    state.db.gallery = data.gallery || [];
+                    if (data.folderUrl) {
+                        state.db.settings.galleryFolderUrl = data.folderUrl;
+                    }
+                    localStorage.setItem('phatflowers_erp_db', JSON.stringify(state.db));
+                    alert("ซิงก์ข้อมูลรูปภาพแกลลอรีจาก Google Drive สำเร็จ!");
+                    renderBackofficeGallery();
+                } else {
+                    alert("ซิงก์แกลลอรีล้มเหลว: " + (data.message || "ไม่สามารถติดต่อเซิร์ฟเวอร์ได้"));
+                }
+            })
+            .catch(err => {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                console.error("Gallery sync network error:", err);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อคลาวด์: " + err.message);
+            });
+        });
+        syncGalleryBtn.dataset.listener = 'true';
+    }
     
     // Set dynamic tab title and description based on active event type
     const titleEl = document.querySelector('#gallery-tab .page-title');

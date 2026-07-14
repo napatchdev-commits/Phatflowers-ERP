@@ -30,34 +30,36 @@ function doPost(e) {
         const file = getOrCreateDatabaseFile();
         const content = file.getBlob().getDataAsString();
         db = content && content !== "{}" ? JSON.parse(content) : null;
-        
-        if (db) {
-          const syncResult = syncGalleryFolders();
-          db.gallery = syncResult.items;
-          if (!db.settings) db.settings = {};
-          db.settings.galleryFolderUrl = syncResult.folderUrl;
-          
-          file.setContent(JSON.stringify(db)); // Save synced DB
-          updateGallerySheet(SpreadsheetApp.getActiveSpreadsheet(), syncResult.items); // Update sheet
-        }
       } catch (fileErr) {
         Logger.log("Error loading database file: " + fileErr.toString());
       }
       return responseJSON({ status: 'success', result: db });
       
+    } else if (action === 'syncGallery') {
+      let db = null;
+      let syncResult = null;
+      try {
+        const file = getOrCreateDatabaseFile();
+        const content = file.getBlob().getDataAsString();
+        db = content && content !== "{}" ? JSON.parse(content) : {};
+        
+        syncResult = syncGalleryFolders();
+        db.gallery = syncResult.items;
+        if (!db.settings) db.settings = {};
+        db.settings.galleryFolderUrl = syncResult.folderUrl;
+        
+        file.setContent(JSON.stringify(db)); // Save synced DB
+        updateGallerySheet(SpreadsheetApp.getActiveSpreadsheet(), syncResult.items); // Update sheet
+      } catch (syncErr) {
+        Logger.log("Error syncing gallery: " + syncErr.toString());
+        return responseJSON({ status: 'error', message: 'Failed to sync gallery: ' + syncErr.toString() });
+      }
+      return responseJSON({ status: 'success', gallery: syncResult.items, folderUrl: syncResult.folderUrl });
+      
     } else if (action === 'syncAll') {
       const data = requestData.data;
       if (!data) {
         return responseJSON({ status: 'error', message: 'No data provided for sync' });
-      }
-      
-      try {
-        const syncResult = syncGalleryFolders();
-        data.gallery = syncResult.items;
-        if (!data.settings) data.settings = {};
-        data.settings.galleryFolderUrl = syncResult.folderUrl;
-      } catch (syncErr) {
-        Logger.log("Error syncing gallery on syncAll: " + syncErr.toString());
       }
       
       // 1. บันทึกข้อมูลดิบลงไฟล์ใน Google Drive เพื่อเลี่ยงขีดจำกัดขนาดข้อมูล 9KB ของ Script Properties
