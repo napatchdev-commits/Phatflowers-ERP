@@ -82,7 +82,8 @@ const DEFAULT_DB = {
         signatures: [
             { id: 'sig-default', name: 'คุณธนภัทร (ค่าเริ่มต้น)', base64: DEFAULT_SIGNATURE }
         ],
-        activeSignatureId: 'sig-default'
+        activeSignatureId: 'sig-default',
+        galleryFolderUrl: ""
     },
     customers: [
         {
@@ -155,6 +156,9 @@ function loadDB() {
                 }
                 if (state.db.settings.activeSignatureId === undefined) {
                     state.db.settings.activeSignatureId = 'sig-default';
+                }
+                if (state.db.settings.galleryFolderUrl === undefined) {
+                    state.db.settings.galleryFolderUrl = '';
                 }
             }
             if (!state.db.customers) state.db.customers = [];
@@ -2708,16 +2712,20 @@ state.activeGalleryType = 'wedding';
 const GALLERY_CATEGORIES = {
     wedding: [
         'พิธีสงฆ์',
-        'ฉากพิธีรับไหว้/สวมแหวน/หลั่งน้ำสังข์',
-        'ฉากงานเลี้ยง',
-        'โต๊ะลงทะเบียน',
+        'ฉากรับไหว้/สวมแหวน',
+        'ฉากหลั่งน้ำสังข์',
+        'ซุ้มทางเข้างาน',
+        'ฉากถ่ายรูปหน้างาน',
+        'แกลลอรี่บ่าวสาว',
         'ฉากเวที',
-        'มุมแกลอรี่',
+        'โต๊ะลงทะเบียน',
+        'ทางเดินเปิดตัว',
+        'เวทีเค้ก',
         'ฉากรับปริญญา',
         'ฉากถ่ายรูปอื่นๆ'
     ],
     ordination: [
-        'ชุดพิธีสงฆ์',
+        'พิธีสงฆ์',
         'ฉากวางเครื่องบวช',
         'ฉากปลงผม/อาบน้ำนาค',
         'ฉากถ่ายรูปงานเลี้ยง'
@@ -2725,10 +2733,17 @@ const GALLERY_CATEGORIES = {
 };
 
 function initGalleryPage() {
-    // Hook add button
+    // Hook add button to open Google Drive folder URL
     const addBtn = document.getElementById('btn-add-gallery-item');
     if (addBtn && !addBtn.dataset.listener) {
-        addBtn.addEventListener('click', openGalleryModal);
+        addBtn.addEventListener('click', () => {
+            const url = state.db.settings.galleryFolderUrl;
+            if (url) {
+                window.open(url, '_blank');
+            } else {
+                alert("ระบบกำลังเชื่อมต่อหรือสร้างโฟลเดอร์ใน Google Drive กรุณารอสักครู่และลองใหม่อีกครั้ง...");
+            }
+        });
         addBtn.dataset.listener = 'true';
     }
     
@@ -2741,7 +2756,7 @@ function initGalleryPage() {
         titleEl.innerText = `จัดการแกลลอรีรูปภาพ (${activeType === 'ordination' ? 'งานบวช' : 'งานแต่งงาน'})`;
     }
     if (subtitleEl) {
-        subtitleEl.innerText = `อัปโหลด ลบ และจัดการรูปภาพผลงานของ${activeType === 'ordination' ? 'งานอุปสมบท' : 'งานมงคลสมรส'}ตามหมวดหมู่เพื่อแสดงผลหน้าเว็บลูกค้า`;
+        subtitleEl.innerText = `จัดการรูปภาพผลงานของ${activeType === 'ordination' ? 'งานอุปสมบท' : 'งานมงคลสมรส'}โดยการอัปโหลดไฟล์ลงในโฟลเดอร์ Google Drive ตามหมวดหมู่โดยตรง ระบบจะดึงรูปภาพมาแสดงให้อัตโนมัติ`;
     }
     
     // Render dynamic filters
@@ -2803,7 +2818,7 @@ function renderBackofficeGallery() {
             <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">
                 <i class="fa-solid fa-images" style="font-size: 48px; margin-bottom: 12px; color: var(--gray-300);"></i>
                 <p>ยังไม่มีรูปภาพผลงานในแกลลอรีนี้</p>
-                <p style="font-size: 12px; margin-top: 4px;">กดปุ่ม "เพิ่มรูปภาพใหม่" ด้านบนเพื่อเริ่มอัปโหลดรูปภาพในหมวดหมู่นี้</p>
+                <p style="font-size: 12px; margin-top: 4px;">กดปุ่ม "จัดการรูปภาพใน Google Drive" ด้านบนเพื่อเริ่มเพิ่มรูปภาพลงในไดฟ์</p>
             </div>
         `;
         return;
@@ -2821,135 +2836,13 @@ function renderBackofficeGallery() {
                 <img src="${item.imageUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
                 <span style="position: absolute; left: 8px; top: 8px; background: ${catColor}; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500;">${item.category}</span>
             </div>
-            <div style="padding: 10px; display: flex; justify-content: flex-end;">
-                <button class="btn btn-danger btn-sm" onclick="deleteGalleryItem('${item.id}')" style="padding: 4px 8px; font-size: 12px;"><i class="fa-solid fa-trash-can"></i> ลบรูปภาพ</button>
-            </div>
         `;
         
         container.appendChild(card);
     });
 }
 
-function openGalleryModal() {
-    const activeType = state.activeGalleryType || 'wedding';
-    const select = document.getElementById('gallery-form-cat');
-    
-    // Dynamic Select options loaded immediately
-    if (select) {
-        select.innerHTML = '';
-        const cats = GALLERY_CATEGORIES[activeType] || [];
-        cats.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c;
-            opt.innerText = c;
-            select.appendChild(opt);
-        });
-    }
-    
-    document.getElementById('gallery-form-file').value = '';
-    document.getElementById('gallery-image-preview-container').style.display = 'none';
-    document.getElementById('gallery-image-preview').src = '';
-    document.getElementById('gallery-modal').style.display = 'flex';
-}
 
-function closeGalleryModal() {
-    document.getElementById('gallery-modal').style.display = 'none';
-}
-
-function previewGalleryImage(event) {
-    const input = event.target;
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const previewContainer = document.getElementById('gallery-image-preview-container');
-            const previewImg = document.getElementById('gallery-image-preview');
-            previewImg.src = e.target.result;
-            previewContainer.style.display = 'block';
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-function saveGalleryItem(event) {
-    event.preventDefault();
-    
-    const cat = document.getElementById('gallery-form-cat').value;
-    const fileInput = document.getElementById('gallery-form-file');
-    
-    if (!fileInput.files || !fileInput.files[0]) {
-        alert("กรุณาเลือกไฟล์รูปภาพที่ต้องการอัปโหลด");
-        return;
-    }
-    
-    const url = state.db.settings.googleSheetsUrl;
-    if (!url) {
-        alert("⚠️ โปรดเชื่อมต่อระบบคลาวด์ก่อนการอัปโหลดแกลลอรีรูปภาพ:\nกรุณากรอก Google Sheets Web App URL ในหน้าตั้งค่าและบันทึกก่อนครับ");
-        return;
-    }
-    
-    showLoadingOverlay('กำลังอัปโหลดรูปภาพลง Google Drive...');
-    
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        const base64Data = e.target.result;
-        
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8'
-            },
-            body: JSON.stringify({
-                action: 'uploadImage',
-                image: base64Data
-            })
-        })
-        .then(response => response.json())
-        .then(res => {
-            hideLoadingOverlay();
-            
-            if (res.status === 'success' && res.imageUrl) {
-                const newItem = {
-                    id: 'gal-' + Date.now(),
-                    eventType: state.activeGalleryType || 'wedding',
-                    category: cat,
-                    imageUrl: res.imageUrl
-                };
-                
-                if (!state.db.gallery) state.db.gallery = [];
-                state.db.gallery.push(newItem);
-                
-                saveDB(true); // Save locally and push database updates to cloud
-                closeGalleryModal();
-                renderBackofficeGallery();
-                alert("อัปโหลดและเพิ่มรูปภาพสำเร็จแล้ว!");
-            } else {
-                hideLoadingOverlay();
-                console.error("Image upload response error:", res);
-                alert("เกิดข้อผิดพลาดในการอัปโหลด: " + (res.message || 'ไม่ทราบสาเหตุ'));
-            }
-        })
-        .catch(err => {
-            hideLoadingOverlay();
-            console.error("Image upload network error:", err);
-            alert("ไม่สามารถติดต่อเซิร์ฟเวอร์อัปโหลดได้: " + err.message);
-        });
-    };
-    
-    reader.readAsDataURL(file);
-}
-
-function deleteGalleryItem(id) {
-    const item = state.db.gallery.find(g => g.id === id);
-    if (!item) return;
-    
-    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรูปภาพผลงานนี้ออกจากระบบ?")) {
-        state.db.gallery = state.db.gallery.filter(g => g.id !== id);
-        saveDB(true); // Save and sync
-        renderBackofficeGallery();
-    }
-}
 
 /* ==========================================================================
    SIGNATURE UTILITIES

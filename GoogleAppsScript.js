@@ -30,6 +30,16 @@ function doPost(e) {
         const file = getOrCreateDatabaseFile();
         const content = file.getBlob().getDataAsString();
         db = content && content !== "{}" ? JSON.parse(content) : null;
+        
+        if (db) {
+          const syncResult = syncGalleryFolders();
+          db.gallery = syncResult.items;
+          if (!db.settings) db.settings = {};
+          db.settings.galleryFolderUrl = syncResult.folderUrl;
+          
+          file.setContent(JSON.stringify(db)); // Save synced DB
+          updateGallerySheet(SpreadsheetApp.getActiveSpreadsheet(), syncResult.items); // Update sheet
+        }
       } catch (fileErr) {
         Logger.log("Error loading database file: " + fileErr.toString());
       }
@@ -39,6 +49,15 @@ function doPost(e) {
       const data = requestData.data;
       if (!data) {
         return responseJSON({ status: 'error', message: 'No data provided for sync' });
+      }
+      
+      try {
+        const syncResult = syncGalleryFolders();
+        data.gallery = syncResult.items;
+        if (!data.settings) data.settings = {};
+        data.settings.galleryFolderUrl = syncResult.folderUrl;
+      } catch (syncErr) {
+        Logger.log("Error syncing gallery on syncAll: " + syncErr.toString());
       }
       
       // 1. บันทึกข้อมูลดิบลงไฟล์ใน Google Drive เพื่อเลี่ยงขีดจำกัดขนาดข้อมูล 9KB ของ Script Properties
@@ -805,4 +824,97 @@ function updateGallerySheet(ss, gallery) {
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
   sheet.autoResizeColumns(1, headers.length);
+}
+
+// ฟังก์ชันสแกนโฟลเดอร์รูปภาพแกลลอรีจาก Google Drive และซิงก์ข้อมูลกลับมาระบบ
+function syncGalleryFolders() {
+  const rootFolderName = "PhatFlowers_Gallery";
+  let rootFolder;
+  const rootFolders = DriveApp.getFoldersByName(rootFolderName);
+  if (rootFolders.hasNext()) {
+    rootFolder = rootFolders.next();
+  } else {
+    rootFolder = DriveApp.createFolder(rootFolderName);
+    rootFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  }
+  
+  const structure = {
+    "งานแต่ง": {
+      eventType: "wedding",
+      categories: [
+        "พิธีสงฆ์",
+        "ฉากรับไหว้/สวมแหวน",
+        "ฉากหลั่งน้ำสังข์",
+        "ซุ้มทางเข้างาน",
+        "ฉากถ่ายรูปหน้างาน",
+        "แกลลอรี่บ่าวสาว",
+        "ฉากเวที",
+        "โต๊ะลงทะเบียน",
+        "ทางเดินเปิดตัว",
+        "เวทีเค้ก",
+        "ฉากรับปริญญา",
+        "ฉากถ่ายรูปอื่นๆ"
+      ]
+    },
+    "งานบวช": {
+      eventType: "ordination",
+      categories: [
+        "พิธีสงฆ์",
+        "ฉากวางเครื่องบวช",
+        "ฉากปลงผม/อาบน้ำนาค",
+        "ฉากถ่ายรูปงานเลี้ยง"
+      ]
+    }
+  };
+  
+  const galleryItems = [];
+  
+  for (const eventName in structure) {
+    const eventConfig = structure[eventName];
+    let eventFolder;
+    const eventFolders = rootFolder.getFoldersByName(eventName);
+    if (eventFolders.hasNext()) {
+      eventFolder = eventFolders.next();
+    } else {
+      eventFolder = rootFolder.createFolder(eventName);
+      eventFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    }
+    
+    eventConfig.categories.forEach(function(catName) {
+      let catFolder;
+      const catFolders = eventFolder.getFoldersByName(catName);
+      if (catFolders.hasNext()) {
+        catFolder = catFolders.next();
+      } else {
+        catFolder = eventFolder.createFolder(catName);
+        catFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      }
+      
+      const files = catFolder.getFiles();
+      while (files.hasNext()) {
+        const file = files.next();
+        const mimeType = file.getMimeType();
+        
+        if (mimeType.indexOf('image/') === 0) {
+          try {
+            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          } catch(e) {
+            Logger.log("Error sharing file: " + e.toString());
+          }
+          
+          galleryItems.push({
+            id: "drive-" + file.getId(),
+            eventType: eventConfig.eventType,
+            category: catName,
+            imageUrl: "https://lh3.googleusercontent.com/d/" + file.getId()
+          });
+        }
+      }
+    });
+  }
+  
+  return {
+    items: galleryItems,
+    folderUrl: rootFolder.getUrl()
+  };
 }
