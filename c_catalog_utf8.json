@@ -1,0 +1,177 @@
+[
+    {
+        "id":  "cat-1",
+        "description":  "ฉากหลังเวที (Backdrop) แบบผ้า",
+        "unitPrice":  10000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-2",
+        "description":  "ซุ้มทางเข้างาน (Arch)",
+        "unitPrice":  6000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-3",
+        "description":  "แสตนด์ดอกไม้ทางเดิน (Flower Stand)",
+        "unitPrice":  1000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-4",
+        "description":  "ช่อดอกไม้เจ้าสาว",
+        "unitPrice":  1500,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-5",
+        "description":  "ดอกไม้ติดหน้าอกประธาน/แขกผู้ใหญ่ (ต่อชิ้น)",
+        "unitPrice":  150,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-6",
+        "description":  "พานขันหมากดอกไม้สด (เซ็ต 5 พาน)",
+        "unitPrice":  3500,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179520565",
+        "description":  "พิธีสงฆ์ พร้อมอุปกรณ์ (เพิ่มเวทียกพื้น)",
+        "unitPrice":  12000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179543167",
+        "description":  "พิธีสงฆ์ พร้อมอุปกรณ์",
+        "unitPrice":  9000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179603021",
+        "description":  "ฉากพิธีการ(รับไหว้/สวมแหวน,หลั่งน้ำสังข์) ขนาด 3.6 x 2.4 เมตร",
+        "unitPrice":  10000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179668606",
+        "description":  "ฉากพิธีการ(รับไหว้/สวมแหวน,หลั่งน้ำสังข์) ขนาด 4.8 x 2.4 เมตร",
+        "unitPrice":  15000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179709479",
+        "description":  "ขันหมากเอก พร้อม ขันหมากโท 9คู่",
+        "unitPrice":  12000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179771505",
+        "description":  "ฉากถ่ายรูปหน้างาน ขนาด 3 x 6 เมตร",
+        "unitPrice":  18000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179803466",
+        "description":  "ฉากถ่ายรูปหน้างาน ขนาด 4.8 x 2.4 เมตร",
+        "unitPrice":  15000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179848084",
+        "description":  "ฉากเวที (Backdrop) โครงสร้าง",
+        "unitPrice":  10000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783179978785",
+        "description":  "ขาตั้งรูป พร้อมตกแต่ง ต่อ1ชิ้น",
+        "unitPrice":  500,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783180039774",
+        "description":  "เวทีเค้ก พร้อมโมเดลเค้ก",
+        "unitPrice":  5000,
+        "eventType":  "wedding",
+        "showOnCatalog":  true
+    },
+    {
+        "id":  "cat-1783258805542",
+        "description":  "พิธีสงฆ์ พร้อมอุปกรณ์",
+        "unitPrice":  9000,
+        "eventType":  "ordination",
+        "showOnCatalog":  false
+    },
+    {
+        "id":  "cat-1783258839479",
+        "description":  "พิธีสงฆ์ พร้อมอุปกรณ์ + เวทียกพื้น",
+        "unitPrice":  12000,
+        "eventType":  "ordination",
+        "showOnCatalog":  false
+    },
+    {
+        "id":  "cat-1784015864122",
+        "description":  "ฉากวางเครื่องบวช (แบบผ้า)",
+        "unitPrice":  10000,
+        "eventType":  "ordination",
+        "showOnCatalog":  false
+    },
+    {
+        "id":  "cat-1784015989916",
+        "description":  "ฉากวางเครื่องบวช (โครงสร้างไม้)",
+        "unitPrice":  12000,
+        "eventType":  "ordination",
+        "showOnCatalog":  false
+    },
+    {
+        "id":  "cat-1784016024293",
+        "description":  "ฉากอาบน้ำนาค/ปลงผมนาค",
+        "unitPrice":  15000,
+        "eventType":  "ordination",
+        "showOnCatalog":  false
+    },
+    {
+        "id":  "cat-1784016066311",
+        "description":  "ฉากถ่ายรูปงานเลี้ยง อุปสมบท ขนาดสูง 2.4 เมตร กว้าง 5 เมตร",
+        "unitPrice":  15000,
+        "eventType":  "ordination",
+        "showOnCatalog":  false
+    },
+    {
+        "id":  "cat-1784016236084",
+        "description":  "ฉากถ่ายรูปงานเลี้ยงอุปสมบท ขนาด สูง 3 กว้าง 7.2 เมตร (ขนาดใหญ่)",
+        "unitPrice":  20000,
+        "eventType":  "ordination",
+        "showOnCatalog":  false
+    },
+    {
+        "id":  "cat-1784016271603",
+        "description":  "ฉากถ่ายรูปงานเลี้ยงอุปสมบท ขนาด สูง 3 กว้าง 6 เมตร",
+        "unitPrice":  18000,
+        "eventType":  "ordination",
+        "showOnCatalog":  false
+    },
+    {
+        "id":  "cat-1784016318155",
+        "description":  "โต๊ะลงทะเบียน ชั้นวางของชำร่วย กล่องรับซอง",
+        "unitPrice":  3000,
+        "eventType":  "wedding",
+        "showOnCatalog":  false
+    }
+]
