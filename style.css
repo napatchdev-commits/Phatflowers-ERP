@@ -712,6 +712,33 @@ textarea.form-control {
 .a4-customer-box {
     text-align: left;
     background: #ffffff;
+    position: relative;
+}
+
+.a4-customer-box:hover {
+    outline: 1px dashed rgba(45, 106, 79, 0.4);
+    outline-offset: 4px;
+}
+
+.a4-customer-drag-handle {
+    position: absolute;
+    top: -2px;
+    right: 0;
+    background: var(--primary);
+    color: #fff;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: move;
+    z-index: 10;
+}
+
+.a4-customer-box:hover .a4-customer-drag-handle {
+    display: flex;
 }
 
 .a4-customer-box-title {
@@ -1322,6 +1349,14 @@ textarea.form-control {
     /* Avoid breaking rows inside table */
     .a4-table tr {
         page-break-inside: avoid !important;
+    }
+    
+    /* Hide drag handles and outlines during printing */
+    .a4-customer-drag-handle {
+        display: none !important;
+    }
+    .a4-customer-box {
+        outline: none !important;
     }
     
     /* Ensure background colors print exactly as set */
