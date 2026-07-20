@@ -322,10 +322,15 @@
                                         <input type="checkbox" id="editor-has-tax" style="width:18px; height:18px;"> คิดภาษีมูลค่าเพิ่ม (VAT 7%)
                                     </label>
                                 </div>
-                                <div class="form-group" style="display:flex; align-items:center; height:100%; padding-top:20px;">
-                                    <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:500;">
+                                <div class="form-group" style="display:flex; align-items:center; gap:8px; height:100%; padding-top:20px; flex-wrap: wrap;">
+                                    <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:500; margin: 0;">
                                         <input type="checkbox" id="editor-attach-id-card" style="width:18px; height:18px;"> แนบสำเนาบัตรประชาชน
                                     </label>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-id-card" style="padding: 2px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fa-solid fa-upload"></i> อัปโหลดรูปบัตร
+                                    </button>
+                                    <span id="id-card-status" style="font-size: 11px; color: var(--primary); font-weight: 500; display: none;"><i class="fa-solid fa-circle-check"></i> อัปโหลดแล้ว</span>
+                                    <input type="file" id="editor-id-card-file" accept="image/*" style="display: none;">
                                 </div>
                             </div>
                             
@@ -572,8 +577,12 @@
                         <!-- ID Card Document (Page 2) -->
                         <div class="a4-document" id="a4-id-card-page" style="display: none; page-break-before: always; justify-content: center; align-items: center; flex-direction: column; padding: 1.2cm 1cm; box-sizing: border-box; background: #ffffff;">
                             <div style="font-family: 'Prompt', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 20px; text-align: center; width: 100%; border-bottom: 1px solid #ddd; padding-bottom: 8px;">สำเนาบัตรประจำตัวประชาชน (ผู้ประกอบการ)</div>
-                            <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; max-height: 80%;">
-                                <canvas id="id-card-pdf-canvas" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.08);"></canvas>
+                            <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; max-height: 80%; flex-direction: column;">
+                                <img id="id-card-img" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: none;">
+                                <div id="id-card-placeholder" style="font-family: 'Prompt', sans-serif; font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px; border: 2px dashed #ccc; border-radius: 8px; width: 80%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-id-card" style="font-size: 48px; margin-bottom: 12px; color: #ccc;"></i>
+                                    <div>ยังไม่ได้อัปโหลดรูปบัตรประชาชน</div>
+                                </div>
                             </div>
                         </div>
                     </div>

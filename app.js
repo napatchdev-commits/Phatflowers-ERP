@@ -160,6 +160,9 @@ function loadDB() {
                 if (state.db.settings.galleryFolderUrl === undefined) {
                     state.db.settings.galleryFolderUrl = '';
                 }
+                if (state.db.settings.idCardBase64 === undefined) {
+                    state.db.settings.idCardBase64 = '';
+                }
             }
             if (!state.db.customers) state.db.customers = [];
             if (!state.db.catalog) state.db.catalog = [];
@@ -1211,6 +1214,34 @@ function initDocGeneratorPage() {
         updateCalculationsAndPreview();
     });
 
+    // ID Card Upload bindings
+    const btnUploadIdCard = document.getElementById('btn-upload-id-card');
+    const fileInputIdCard = document.getElementById('editor-id-card-file');
+    
+    if (btnUploadIdCard && fileInputIdCard) {
+        btnUploadIdCard.addEventListener('click', () => fileInputIdCard.click());
+        
+        fileInputIdCard.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    autoProcessIdCardImage(img, (croppedBase64) => {
+                        state.db.settings.idCardBase64 = croppedBase64;
+                        saveDB();
+                        updateIdCardUploadStatus();
+                        updateCalculationsAndPreview();
+                    });
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     // Bank Account Edit binding
     bindField('editor-bank-name', 'bankName');
     bindField('editor-bank-no', 'bankAccountNo');
@@ -1437,6 +1468,7 @@ function renderDocumentGenerator() {
     document.getElementById('editor-discount').value = state.currentDoc.discount;
     document.getElementById('editor-has-tax').checked = state.currentDoc.hasTax;
     document.getElementById('editor-attach-id-card').checked = !!state.currentDoc.attachIdCard;
+    updateIdCardUploadStatus();
     
     // Populate deposit inputs
     const opt = state.currentDoc.depositOption || 'none';
@@ -1949,13 +1981,27 @@ function renderA4Preview() {
         sigDateSpan.textContent = parseThaiDate(doc.date) || '-';
     }
 
-    // Render/Toggle ID Card second page PDF
+    // Render/Toggle ID Card second page
     const idCardPage = document.getElementById('a4-id-card-page');
     if (idCardPage) {
         if (doc.attachIdCard) {
             idCardPage.classList.remove('hidden-page');
             idCardPage.style.display = 'flex';
-            renderIdCardPDF();
+            
+            const idCardImg = document.getElementById('id-card-img');
+            const idCardPlaceholder = document.getElementById('id-card-placeholder');
+            
+            if (idCardImg && idCardPlaceholder) {
+                if (settings.idCardBase64) {
+                    idCardImg.src = settings.idCardBase64;
+                    idCardImg.style.display = 'block';
+                    idCardPlaceholder.style.display = 'none';
+                } else {
+                    idCardImg.src = '';
+                    idCardImg.style.display = 'none';
+                    idCardPlaceholder.style.display = 'flex';
+                }
+            }
         } else {
             idCardPage.classList.add('hidden-page');
             idCardPage.style.display = 'none';
@@ -3078,37 +3124,106 @@ function renderSettingsSignaturesList() {
     });
 }
 
-// Render PDF file to canvas via pdf.js
-function renderIdCardPDF() {
-    const canvas = document.getElementById('id-card-pdf-canvas');
-    if (!canvas || canvas.dataset.rendered === 'true') return;
-
-    if (typeof pdfjsLib === 'undefined') {
-        console.warn('pdf.js library is not loaded yet');
-        return;
+// Helper to update the ID Card upload status UI
+function updateIdCardUploadStatus() {
+    const statusSpan = document.getElementById('id-card-status');
+    const btn = document.getElementById('btn-upload-id-card');
+    if (!statusSpan || !btn) return;
+    
+    if (state.db.settings.idCardBase64) {
+        statusSpan.style.display = 'inline-flex';
+        btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> เปลี่ยนรูปบัตร';
+    } else {
+        statusSpan.style.display = 'none';
+        btn.innerHTML = '<i class="fa-solid fa-upload"></i> อัปโหลดรูปบัตร';
     }
+}
 
-    canvas.dataset.rendered = 'true';
+// Automatic background-removal / border-cropping algorithm for ID Cards
+function autoProcessIdCardImage(img, callback) {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    // Scale image down to 400px width for fast scanning
+    const scanWidth = 400;
+    const scanHeight = Math.round((img.height / img.width) * scanWidth);
+    tempCanvas.width = scanWidth;
+    tempCanvas.height = scanHeight;
+    tempCtx.drawImage(img, 0, 0, scanWidth, scanHeight);
+    
+    const imgData = tempCtx.getImageData(0, 0, scanWidth, scanHeight);
+    const data = imgData.data;
+    
+    // Helper to get pixel RGB
+    const getPixel = (arr, w, x, y) => {
+        const idx = (y * w + x) * 4;
+        return { r: arr[idx], g: arr[idx+1], b: arr[idx+2] };
+    };
 
-    // Set worker source
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-
-    const loadingTask = pdfjsLib.getDocument('./11.pdf');
-    loadingTask.promise.then(pdf => {
-        pdf.getPage(1).then(page => {
-            const viewport = page.getViewport({ scale: 2.0 }); // Render with 2.0 scale for high resolution print
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-            page.render(renderContext);
-        });
-    }).catch(error => {
-        canvas.dataset.rendered = 'false'; // Allow retry on error
-        console.error('Error loading ID Card PDF with pdf.js:', error);
-    });
+    // Calculate background reference by averaging the 4 corners
+    const corners = [
+        getPixel(data, scanWidth, 0, 0),
+        getPixel(data, scanWidth, scanWidth - 1, 0),
+        getPixel(data, scanWidth, 0, scanHeight - 1),
+        getPixel(data, scanWidth, scanWidth - 1, scanHeight - 1)
+    ];
+    const bgR = corners.reduce((sum, c) => sum + c.r, 0) / 4;
+    const bgG = corners.reduce((sum, c) => sum + c.g, 0) / 4;
+    const bgB = corners.reduce((sum, c) => sum + c.b, 0) / 4;
+    
+    const threshold = 40; // Color distance threshold
+    let minX = scanWidth, maxX = 0, minY = scanHeight, maxY = 0;
+    
+    // Find bounding box of pixels that differ from background
+    for (let y = 0; y < scanHeight; y++) {
+        for (let x = 0; x < scanWidth; x++) {
+            const p = getPixel(data, scanWidth, x, y);
+            const dist = Math.sqrt(Math.pow(p.r - bgR, 2) + Math.pow(p.g - bgG, 2) + Math.pow(p.b - bgB, 2));
+            if (dist > threshold) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+    
+    const scaleX = img.width / scanWidth;
+    const scaleY = img.height / scanHeight;
+    let cropX, cropY, cropW, cropH;
+    
+    const detectedW = maxX - minX;
+    const detectedH = maxY - minY;
+    
+    // If we found a valid card bounding box, crop it
+    if (detectedW > 50 && detectedH > 50 && detectedW < scanWidth - 10 && detectedH < scanHeight - 10) {
+        cropX = minX * scaleX;
+        cropY = minY * scaleY;
+        cropW = detectedW * scaleX;
+        cropH = detectedH * scaleY;
+    } else {
+        // Fallback: Crop center of the image with the standard ID card aspect ratio (1.58)
+        const targetRatio = 1.58;
+        const currentRatio = img.width / img.height;
+        if (currentRatio > targetRatio) {
+            cropH = img.height * 0.9;
+            cropW = cropH * targetRatio;
+            cropX = (img.width - cropW) / 2;
+            cropY = (img.height - cropH) / 2;
+        } else {
+            cropW = img.width * 0.9;
+            cropH = cropW / targetRatio;
+            cropX = (img.width - cropW) / 2;
+            cropY = (img.height - cropH) / 2;
+        }
+    }
+    
+    // Render the cropped ID card onto a clean standard card size canvas
+    const outputCanvas = document.createElement('canvas');
+    const outputCtx = outputCanvas.getContext('2d');
+    outputCanvas.width = 1000;
+    outputCanvas.height = 633; // ~1.58 aspect ratio
+    outputCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, 1000, 633);
+    
+    callback(outputCanvas.toDataURL('image/jpeg', 0.9));
 }
