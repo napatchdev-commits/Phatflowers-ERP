@@ -709,54 +709,30 @@ textarea.form-control {
     margin-bottom: 20px;
 }
 
-.a4-customer-section {
-    display: flex;
-    justify-content: space-between;
-    border-top: 1px solid #1a1a1a;
-    border-bottom: 1px solid #1a1a1a;
-    padding: 8px 0;
-    margin-bottom: 20px;
-    gap: 20px;
+.a4-customer-box {
+    text-align: left;
     background: #ffffff;
 }
 
-.a4-customer-col {
-    width: 48%;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
+.a4-customer-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.a4-customer-row {
-    display: flex;
-    align-items: flex-start;
+.a4-customer-table td {
     padding: 3px 0;
     font-size: 12px;
+    vertical-align: top;
 }
 
-.a4-customer-row .label {
-    font-weight: 600;
-    flex-shrink: 0;
-    color: #1a1a1a;
-}
-
-.a4-customer-row .label.left-label {
+.a4-customer-table td.label {
     width: 145px;
+    font-weight: 600;
 }
 
-.a4-customer-row .label.right-label {
-    width: 80px;
-}
-
-.a4-customer-row .colon {
-    width: 15px;
-    flex-shrink: 0;
-}
-
-.a4-customer-row .value {
-    flex-grow: 1;
-    word-break: break-word;
-    color: #333333;
+.a4-customer-table td.colon {
+    width: 10px;
+    padding-right: 5px;
 }
 
 .a4-customer-box-title {

@@ -1713,7 +1713,21 @@ function renderA4Preview() {
     document.getElementById('p-doc-date').textContent = parseThaiDate(doc.date);
     
     // Customer details
-    document.getElementById('p-cust-name').textContent = doc.customerName || '-';
+    // Customer details with auto-shrinking font size for long names (max 2 lines)
+    const nameEl = document.getElementById('p-cust-name');
+    const nameText = doc.customerName || '-';
+    nameEl.textContent = nameText;
+    nameEl.style.fontSize = "";
+    nameEl.style.lineHeight = "";
+    nameEl.style.wordBreak = "break-word";
+    
+    if (nameText.length > 50) {
+        nameEl.style.fontSize = "9px";
+        nameEl.style.lineHeight = "1.2";
+    } else if (nameText.length > 35) {
+        nameEl.style.fontSize = "10.5px";
+        nameEl.style.lineHeight = "1.3";
+    }
     document.getElementById('p-cust-taxid').textContent = doc.customerTaxId || '-';
     document.getElementById('p-cust-phone').textContent = doc.customerPhone || '-';
     document.getElementById('p-cust-addr').textContent = doc.customerAddress || '-';
