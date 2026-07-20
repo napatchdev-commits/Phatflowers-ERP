@@ -635,11 +635,11 @@ textarea.form-control {
 }
 
 .a4-header-left {
-    width: 48%;
+    width: 38%;
 }
 
 .a4-header-right {
-    width: 48%;
+    width: 58%;
     text-align: right;
 }
 
@@ -757,9 +757,10 @@ textarea.form-control {
 }
 
 .a4-customer-table td.label {
-    width: 155px;
+    width: 140px;
     font-weight: 600;
     color: #1a1a1a;
+    letter-spacing: -0.3px;
 }
 
 .a4-customer-table td.colon {
