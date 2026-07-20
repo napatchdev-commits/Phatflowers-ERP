@@ -1279,20 +1279,31 @@ function initDocGeneratorPage() {
         btnResetDoc.addEventListener('click', () => {
             resetDocEditorState();
             renderDocumentGenerator();
-            // Reset customer box position
-            const custBox = document.querySelector('.a4-customer-box');
-            if (custBox) {
-                custBox.style.top = "";
-                custBox.style.left = "";
+            // Reset customer rows position
+            const nameRow = document.getElementById('row-cust-name');
+            if (nameRow) {
+                nameRow.style.top = "";
+                nameRow.style.left = "";
+            }
+            const addrRow = document.getElementById('row-cust-addr');
+            if (addrRow) {
+                addrRow.style.top = "";
+                addrRow.style.left = "";
             }
         });
     }
 
-    // Setup draggable customer box
-    const custBox = document.querySelector('.a4-customer-box');
-    const dragHandle = document.querySelector('.a4-customer-drag-handle');
-    if (custBox && dragHandle) {
-        makeElementDraggable(custBox, dragHandle);
+    // Setup draggable customer rows (only Name and Address)
+    const nameRow = document.getElementById('row-cust-name');
+    const nameHandle = nameRow ? nameRow.querySelector('.a4-row-drag-handle') : null;
+    if (nameRow && nameHandle) {
+        makeElementDraggable(nameRow, nameHandle);
+    }
+
+    const addrRow = document.getElementById('row-cust-addr');
+    const addrHandle = addrRow ? addrRow.querySelector('.a4-row-drag-handle') : null;
+    if (addrRow && addrHandle) {
+        makeElementDraggable(addrRow, addrHandle);
     }
 
     document.getElementById('btn-save-doc').addEventListener('click', () => {
@@ -1429,11 +1440,16 @@ function selectCustomer(customer) {
 }
 
 function renderDocumentGenerator() {
-    // Reset customer box position from any previous drag offsets
-    const custBox = document.querySelector('.a4-customer-box');
-    if (custBox) {
-        custBox.style.top = "";
-        custBox.style.left = "";
+    // Reset customer rows position from any previous drag offsets
+    const nameRow = document.getElementById('row-cust-name');
+    if (nameRow) {
+        nameRow.style.top = "";
+        nameRow.style.left = "";
+    }
+    const addrRow = document.getElementById('row-cust-addr');
+    if (addrRow) {
+        addrRow.style.top = "";
+        addrRow.style.left = "";
     }
 
     // Set field values in editor inputs

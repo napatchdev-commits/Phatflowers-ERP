@@ -712,32 +712,60 @@ textarea.form-control {
 .a4-customer-box {
     text-align: left;
     background: #ffffff;
+}
+
+.a4-customer-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 3px 0;
+    font-size: 12px;
     position: relative;
 }
 
-.a4-customer-box:hover {
+.a4-customer-row .label {
+    width: 145px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.a4-customer-row .colon {
+    width: 15px;
+    flex-shrink: 0;
+}
+
+.a4-customer-row .value {
+    flex-grow: 1;
+    word-break: break-word;
+}
+
+.draggable-row {
+    position: relative;
+}
+
+.draggable-row:hover {
     outline: 1px dashed rgba(45, 106, 79, 0.4);
     outline-offset: 4px;
 }
 
-.a4-customer-drag-handle {
+.a4-row-drag-handle {
     position: absolute;
-    top: -2px;
-    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    right: -25px;
     background: var(--primary);
     color: #fff;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 4px;
     display: none;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 9px;
     cursor: move;
     z-index: 10;
 }
 
-.a4-customer-box:hover .a4-customer-drag-handle {
+.draggable-row:hover .a4-row-drag-handle {
     display: flex;
 }
 
@@ -1352,10 +1380,10 @@ textarea.form-control {
     }
     
     /* Hide drag handles and outlines during printing */
-    .a4-customer-drag-handle {
+    .a4-row-drag-handle {
         display: none !important;
     }
-    .a4-customer-box {
+    .draggable-row {
         outline: none !important;
     }
     

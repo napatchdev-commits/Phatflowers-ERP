@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -421,42 +421,48 @@
                                         วันที่ / Date : <span id="p-doc-date">27 มิถุนายน 2569</span>
                                     </div>
                                     
-                                    <div class="a4-customer-box">
-                                         <div class="a4-customer-drag-handle" title="คลิกและลากเพื่อขยับตำแหน่งได้อิสระ"><i class="fa-solid fa-arrows-up-down-left-right"></i></div>
+                                                                         <div class="a4-customer-box">
                                          <div class="a4-customer-box-title">ข้อมูลลูกค้า</div>
-                                        <table class="a4-customer-table">
-                                            <tr>
-                                                <td class="label">ชื่อลูกค้า</td>
-                                                <td class="colon">:</td>
-                                                <td id="p-cust-name">-</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="label">เลขประจำตัวผู้เสียภาษี</td>
-                                                <td class="colon">:</td>
-                                                <td id="p-cust-taxid" style="font-family:'Inter', sans-serif;">-</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="label">เบอร์โทรศัพท์</td>
-                                                <td class="colon">:</td>
-                                                <td id="p-cust-phone" style="font-family:'Inter', sans-serif;">-</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="label">ที่อยู่</td>
-                                                <td class="colon">:</td>
-                                                <td id="p-cust-addr">-</td>
-                                            </tr>
-                                            <tr id="p-row-event-date">
-                                                <td class="label">วันที่จัดงาน</td>
-                                                <td class="colon">:</td>
-                                                <td id="p-event-date">-</td>
-                                            </tr>
-                                            <tr id="p-row-event-location">
-                                                <td class="label">สถานที่จัดงาน</td>
-                                                <td class="colon">:</td>
-                                                <td id="p-event-location">-</td>
-                                            </tr>
-                                        </table>
-                                    </div>
+                                         
+                                         <div class="a4-customer-row draggable-row" id="row-cust-name">
+                                             <div class="a4-row-drag-handle" title="คลิกและลากขยับเฉพาะชื่อลูกค้า"><i class="fa-solid fa-arrows-up-down-left-right"></i></div>
+                                             <span class="label">ชื่อลูกค้า</span>
+                                             <span class="colon">:</span>
+                                             <span class="value" id="p-cust-name">-</span>
+                                         </div>
+                                         
+                                         <div class="a4-customer-row" id="row-cust-taxid">
+                                             <span class="label">เลขประจำตัวผู้เสียภาษี</span>
+                                             <span class="colon">:</span>
+                                             <span class="value" id="p-cust-taxid" style="font-family:'Inter', sans-serif;">-</span>
+                                         </div>
+                                         
+                                         <div class="a4-customer-row" id="row-cust-phone">
+                                             <span class="label">เบอร์โทรศัพท์</span>
+                                             <span class="colon">:</span>
+                                             <span class="value" id="p-cust-phone" style="font-family:'Inter', sans-serif;">-</span>
+                                         </div>
+                                         
+                                         <div class="a4-customer-row draggable-row" id="row-cust-addr">
+                                             <div class="a4-row-drag-handle" title="คลิกและลากขยับเฉพาะที่อยู่"><i class="fa-solid fa-arrows-up-down-left-right"></i></div>
+                                             <span class="label">ที่อยู่</span>
+                                             <span class="colon">:</span>
+                                             <span class="value" id="p-cust-addr">-</span>
+                                         </div>
+                                         
+                                         <div class="a4-customer-row" id="p-row-event-date">
+                                             <span class="label">วันที่จัดงาน</span>
+                                             <span class="colon">:</span>
+                                             <span class="value" id="p-event-date">-</span>
+                                         </div>
+                                         
+                                         <div class="a4-customer-row" id="p-row-event-location">
+                                             <span class="label">สถานที่จัดงาน</span>
+                                             <span class="colon">:</span>
+                                             <span class="value" id="p-event-location">-</span>
+                                         </div>
+                                     </div>
+
                                 </div>
                             </div>
 
