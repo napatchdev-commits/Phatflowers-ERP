@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -12,6 +12,9 @@
     
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- pdf.js for rendering PDF inside print pages -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     
     <!-- Stylesheet -->
     <link rel="stylesheet" href="style.css">
@@ -319,6 +322,11 @@
                                         <input type="checkbox" id="editor-has-tax" style="width:18px; height:18px;"> คิดภาษีมูลค่าเพิ่ม (VAT 7%)
                                     </label>
                                 </div>
+                                <div class="form-group" style="display:flex; align-items:center; height:100%; padding-top:20px;">
+                                    <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:500;">
+                                        <input type="checkbox" id="editor-attach-id-card" style="width:18px; height:18px;"> แนบสำเนาบัตรประชาชน
+                                    </label>
+                                </div>
                             </div>
                             
                             <!-- Deposit selection block -->
@@ -559,6 +567,14 @@
                                 </div>
                             </div>
 
+                        </div>
+                        
+                        <!-- ID Card Document (Page 2) -->
+                        <div class="a4-document" id="a4-id-card-page" style="display: none; page-break-before: always; justify-content: center; align-items: center; flex-direction: column; padding: 1.2cm 1cm; box-sizing: border-box; background: #ffffff;">
+                            <div style="font-family: 'Prompt', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 20px; text-align: center; width: 100%; border-bottom: 1px solid #ddd; padding-bottom: 8px;">สำเนาบัตรประจำตัวประชาชน (ผู้ประกอบการ)</div>
+                            <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; max-height: 80%;">
+                                <canvas id="id-card-pdf-canvas" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.08);"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>

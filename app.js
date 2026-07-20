@@ -1205,6 +1205,12 @@ function initDocGeneratorPage() {
         updateCalculationsAndPreview();
     });
 
+    // ID Card Toggle
+    document.getElementById('editor-attach-id-card').addEventListener('change', (e) => {
+        state.currentDoc.attachIdCard = e.target.checked;
+        updateCalculationsAndPreview();
+    });
+
     // Bank Account Edit binding
     bindField('editor-bank-name', 'bankName');
     bindField('editor-bank-no', 'bankAccountNo');
@@ -1330,6 +1336,7 @@ function resetDocEditorState() {
         depositAmount: 0,
         depositNote: 'ชำระค่ามัดจำ 5,000 บาท ส่วนที่เหลือจ่ายวันติดตั้ง',
         hasTax: false,
+        attachIdCard: false,
         bankName: settings.bankName || 'กสิกรไทย',
         bankAccountNo: settings.bankAccountNo || '034-8-20289-8',
         bankAccountName: settings.bankAccountName || 'ธนากร แก้วไทรอินทร์',
@@ -1429,6 +1436,7 @@ function renderDocumentGenerator() {
     document.getElementById('editor-notes').value = state.currentDoc.depositNote;
     document.getElementById('editor-discount').value = state.currentDoc.discount;
     document.getElementById('editor-has-tax').checked = state.currentDoc.hasTax;
+    document.getElementById('editor-attach-id-card').checked = !!state.currentDoc.attachIdCard;
     
     // Populate deposit inputs
     const opt = state.currentDoc.depositOption || 'none';
@@ -1939,6 +1947,19 @@ function renderA4Preview() {
     const sigDateSpan = document.getElementById('p-sig-date');
     if (sigDateSpan) {
         sigDateSpan.textContent = parseThaiDate(doc.date) || '-';
+    }
+
+    // Render/Toggle ID Card second page PDF
+    const idCardPage = document.getElementById('a4-id-card-page');
+    if (idCardPage) {
+        if (doc.attachIdCard) {
+            idCardPage.classList.remove('hidden-page');
+            idCardPage.style.display = 'flex';
+            renderIdCardPDF();
+        } else {
+            idCardPage.classList.add('hidden-page');
+            idCardPage.style.display = 'none';
+        }
     }
 }
 
@@ -3054,5 +3075,40 @@ function renderSettingsSignaturesList() {
         item.appendChild(left);
         item.appendChild(right);
         listContainer.appendChild(item);
+    });
+}
+
+// Render PDF file to canvas via pdf.js
+function renderIdCardPDF() {
+    const canvas = document.getElementById('id-card-pdf-canvas');
+    if (!canvas || canvas.dataset.rendered === 'true') return;
+
+    if (typeof pdfjsLib === 'undefined') {
+        console.warn('pdf.js library is not loaded yet');
+        return;
+    }
+
+    canvas.dataset.rendered = 'true';
+
+    // Set worker source
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    const loadingTask = pdfjsLib.getDocument('./11.pdf');
+    loadingTask.promise.then(pdf => {
+        pdf.getPage(1).then(page => {
+            const viewport = page.getViewport({ scale: 2.0 }); // Render with 2.0 scale for high resolution print
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+            page.render(renderContext);
+        });
+    }).catch(error => {
+        canvas.dataset.rendered = 'false'; // Allow retry on error
+        console.error('Error loading ID Card PDF with pdf.js:', error);
     });
 }
