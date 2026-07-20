@@ -738,7 +738,7 @@ textarea.form-control {
 .a4-customer-box-title {
     font-family: 'Prompt', sans-serif;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 15px;
     border-bottom: 1px solid #1a1a1a;
     padding-bottom: 4px;
     margin-bottom: 8px;
@@ -752,12 +752,12 @@ textarea.form-control {
 
 .a4-customer-table td {
     padding: 3px 0;
-    font-size: 12px;
+    font-size: 13.5px;
     vertical-align: top;
 }
 
 .a4-customer-table td.label {
-    width: 145px;
+    width: 155px;
     font-weight: 600;
     color: #1a1a1a;
 }

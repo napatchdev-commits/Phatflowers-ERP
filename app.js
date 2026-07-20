@@ -1722,15 +1722,41 @@ function renderA4Preview() {
     nameEl.style.wordBreak = "break-word";
     
     if (nameText.length > 50) {
-        nameEl.style.fontSize = "9px";
+        nameEl.style.fontSize = "10px";
         nameEl.style.lineHeight = "1.2";
     } else if (nameText.length > 35) {
-        nameEl.style.fontSize = "10.5px";
+        nameEl.style.fontSize = "11.5px";
         nameEl.style.lineHeight = "1.3";
     }
     document.getElementById('p-cust-taxid').textContent = doc.customerTaxId || '-';
     document.getElementById('p-cust-phone').textContent = doc.customerPhone || '-';
-    document.getElementById('p-cust-addr').textContent = doc.customerAddress || '-';
+    
+    // Address formatter helper to split into 3 lines:
+    // Line 1: เลขที่... ถนน...
+    // Line 2: ตำบล...
+    // Line 3: อำเภอ... จังหวัด... (และรหัสไปรษณีย์)
+    const formatThaiAddress = (addressStr) => {
+        if (!addressStr) return '-';
+        let addr = addressStr.trim().replace(/\s+/g, ' ');
+        
+        let subDistIdx = addr.search(/ตำบล|ต\./);
+        let distIdx = addr.search(/อำเภอ|อ\./);
+        let provIdx = addr.search(/จังหวัด|จ\./);
+        
+        if (subDistIdx !== -1 && distIdx !== -1 && provIdx !== -1) {
+            let line1 = addr.substring(0, subDistIdx).trim();
+            let line2 = addr.substring(subDistIdx, distIdx).trim();
+            let line3 = addr.substring(distIdx).trim();
+            return `${line1}<br>${line2}<br>${line3}`;
+        }
+        if (distIdx !== -1) {
+            let line1 = addr.substring(0, distIdx).trim();
+            let line2 = addr.substring(distIdx).trim();
+            return `${line1}<br>${line2}`;
+        }
+        return addr;
+    };
+    document.getElementById('p-cust-addr').innerHTML = formatThaiAddress(doc.customerAddress);
     
     // Event details (Conditional display or '-' if empty)
     document.getElementById('p-event-date').textContent = parseThaiDate(doc.eventDate) || '-';
