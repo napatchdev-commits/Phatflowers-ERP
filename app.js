@@ -1279,31 +1279,7 @@ function initDocGeneratorPage() {
         btnResetDoc.addEventListener('click', () => {
             resetDocEditorState();
             renderDocumentGenerator();
-            // Reset customer rows position
-            const nameRow = document.getElementById('row-cust-name');
-            if (nameRow) {
-                nameRow.style.top = "";
-                nameRow.style.left = "";
-            }
-            const addrRow = document.getElementById('row-cust-addr');
-            if (addrRow) {
-                addrRow.style.top = "";
-                addrRow.style.left = "";
-            }
         });
-    }
-
-    // Setup draggable customer rows (only Name and Address)
-    const nameRow = document.getElementById('row-cust-name');
-    const nameHandle = nameRow ? nameRow.querySelector('.a4-row-drag-handle') : null;
-    if (nameRow && nameHandle) {
-        makeElementDraggable(nameRow, nameHandle);
-    }
-
-    const addrRow = document.getElementById('row-cust-addr');
-    const addrHandle = addrRow ? addrRow.querySelector('.a4-row-drag-handle') : null;
-    if (addrRow && addrHandle) {
-        makeElementDraggable(addrRow, addrHandle);
     }
 
     document.getElementById('btn-save-doc').addEventListener('click', () => {
@@ -1440,18 +1416,6 @@ function selectCustomer(customer) {
 }
 
 function renderDocumentGenerator() {
-    // Reset customer rows position from any previous drag offsets
-    const nameRow = document.getElementById('row-cust-name');
-    if (nameRow) {
-        nameRow.style.top = "";
-        nameRow.style.left = "";
-    }
-    const addrRow = document.getElementById('row-cust-addr');
-    if (addrRow) {
-        addrRow.style.top = "";
-        addrRow.style.left = "";
-    }
-
     // Set field values in editor inputs
     document.getElementById('editor-doc-type').value = state.currentDoc.docType;
     document.getElementById('editor-doc-no').value = state.currentDoc.docNo;
@@ -3051,76 +3015,4 @@ function renderSettingsSignaturesList() {
         item.appendChild(right);
         listContainer.appendChild(item);
     });
-}
-
-// Helper to make preview elements draggable (specifically for customer info box)
-function makeElementDraggable(el, handleEl) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    const trigger = handleEl || el;
-    
-    trigger.addEventListener('mousedown', dragMouseDown);
-    trigger.addEventListener('touchstart', dragTouchStart, { passive: false });
-
-    function dragMouseDown(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.addEventListener('mouseup', closeDragElement);
-        document.addEventListener('mousemove', elementDrag);
-    }
-
-    function dragTouchStart(e) {
-        if (e.touches.length === 1) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            pos3 = touch.clientX;
-            pos4 = touch.clientY;
-            document.addEventListener('touchend', closeDragElement);
-            document.addEventListener('touchmove', elementTouchDrag, { passive: false });
-        }
-    }
-
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        
-        const style = window.getComputedStyle(el);
-        const top = parseInt(style.top) || 0;
-        const left = parseInt(style.left) || 0;
-        
-        el.style.position = "relative";
-        el.style.top = (top - pos2) + "px";
-        el.style.left = (left - pos1) + "px";
-    }
-
-    function elementTouchDrag(e) {
-        if (e.touches.length === 1) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            pos1 = pos3 - touch.clientX;
-            pos2 = pos4 - touch.clientY;
-            pos3 = touch.clientX;
-            pos4 = touch.clientY;
-            
-            const style = window.getComputedStyle(el);
-            const top = parseInt(style.top) || 0;
-            const left = parseInt(style.left) || 0;
-            
-            el.style.position = "relative";
-            el.style.top = (top - pos2) + "px";
-            el.style.left = (left - pos1) + "px";
-        }
-    }
-
-    function closeDragElement() {
-        document.removeEventListener('mouseup', closeDragElement);
-        document.removeEventListener('mousemove', elementDrag);
-        document.removeEventListener('touchend', closeDragElement);
-        document.removeEventListener('touchmove', elementTouchDrag);
-    }
 }
