@@ -1990,16 +1990,41 @@ function renderA4Preview() {
             
             const idCardImg = document.getElementById('id-card-img');
             const idCardPlaceholder = document.getElementById('id-card-placeholder');
+            const idCardSigBlock = document.getElementById('id-card-sig-block');
             
-            if (idCardImg && idCardPlaceholder) {
+            if (idCardImg && idCardPlaceholder && idCardSigBlock) {
                 if (settings.idCardBase64) {
                     idCardImg.src = settings.idCardBase64;
                     idCardImg.style.display = 'block';
                     idCardPlaceholder.style.display = 'none';
+                    idCardSigBlock.style.display = 'block';
+                    
+                    // Render dynamic signature and name
+                    const sigName = doc.managerName || 'ธนภัทร ชัยบำรุง';
+                    document.getElementById('id-card-sig-name').textContent = `(นาย${sigName.replace(/นาย|นางสาว|นาง/g, '')})`;
+                    
+                    const idCardSigImg = document.getElementById('id-card-sig-img');
+                    if (idCardSigImg) {
+                        const sigId = doc.signatureId !== undefined ? doc.signatureId : (settings.activeSignatureId || 'sig-default');
+                        if (sigId === 'none') {
+                            idCardSigImg.src = '';
+                            idCardSigImg.style.display = 'none';
+                        } else {
+                            const signatureObj = (settings.signatures || []).find(s => s.id === sigId) || (settings.signatures || [])[0];
+                            if (signatureObj && signatureObj.base64) {
+                                idCardSigImg.src = signatureObj.base64;
+                                idCardSigImg.style.display = 'block';
+                            } else {
+                                idCardSigImg.src = '';
+                                idCardSigImg.style.display = 'none';
+                            }
+                        }
+                    }
                 } else {
                     idCardImg.src = '';
                     idCardImg.style.display = 'none';
                     idCardPlaceholder.style.display = 'flex';
+                    idCardSigBlock.style.display = 'none';
                 }
             }
         } else {

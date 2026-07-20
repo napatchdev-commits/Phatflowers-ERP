@@ -575,13 +575,26 @@
                         </div>
                         
                         <!-- ID Card Document (Page 2) -->
-                        <div class="a4-document" id="a4-id-card-page" style="display: none; page-break-before: always; justify-content: center; align-items: center; flex-direction: column; padding: 1.2cm 1cm; box-sizing: border-box; background: #ffffff;">
-                            <div style="font-family: 'Prompt', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 20px; text-align: center; width: 100%; border-bottom: 1px solid #ddd; padding-bottom: 8px;">สำเนาบัตรประจำตัวประชาชน (ผู้ประกอบการ)</div>
-                            <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; max-height: 80%; flex-direction: column;">
-                                <img id="id-card-img" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: none;">
-                                <div id="id-card-placeholder" style="font-family: 'Prompt', sans-serif; font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px; border: 2px dashed #ccc; border-radius: 8px; width: 80%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div class="a4-document" id="a4-id-card-page" style="display: none; page-break-before: always; justify-content: flex-start; align-items: center; flex-direction: column; padding: 2.5cm 2cm; box-sizing: border-box; background: #ffffff;">
+                            <div style="font-family: 'Prompt', sans-serif; font-size: 18px; font-weight: 600; margin-bottom: 2cm; text-align: center; width: 100%; border-bottom: 1px solid #ddd; padding-bottom: 8px;">สำเนาบัตรประจำตัวประชาชน</div>
+                            
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+                                <!-- The ID Card image rendered at the exact physical card size -->
+                                <img id="id-card-img" style="width: 8.56cm !important; height: 5.398cm !important; object-fit: cover; border: 1px solid #000; box-shadow: 0 4px 8px rgba(0,0,0,0.05); display: none;">
+                                
+                                <div id="id-card-placeholder" style="font-family: 'Prompt', sans-serif; font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px; border: 2px dashed #ccc; border-radius: 8px; width: 80%; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 5.398cm; box-sizing: border-box;">
                                     <i class="fa-solid fa-id-card" style="font-size: 48px; margin-bottom: 12px; color: #ccc;"></i>
                                     <div>ยังไม่ได้อัปโหลดรูปบัตรประชาชน</div>
+                                </div>
+                                
+                                <!-- Signature Area under the card -->
+                                <div id="id-card-sig-block" style="margin-top: 2cm; text-align: center; font-family: 'Prompt', sans-serif; display: none;">
+                                    <div style="position: relative; height: 50px; margin-bottom: 8px; width: 200px; margin-left: auto; margin-right: auto;">
+                                        <img id="id-card-sig-img" src="" alt="ลายเซ็น" style="display: none; height: 60px; max-width: 150px; object-fit: contain; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); z-index: 2;">
+                                        <div style="border-bottom: 1px dotted #000; position: absolute; bottom: 0; left: 0; right: 0; margin: 0;"></div>
+                                    </div>
+                                    <div style="font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #000;">สำเนาถูกต้อง</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #000;" id="id-card-sig-name">(นายธนภัทร ชัยบำรุง)</div>
                                 </div>
                             </div>
                         </div>
