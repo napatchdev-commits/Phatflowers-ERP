@@ -329,6 +329,9 @@
                                     <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-id-card" style="padding: 2px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
                                         <i class="fa-solid fa-upload"></i> อัปโหลดรูปบัตร
                                     </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-crop-id-card" style="padding: 2px 8px; font-size: 11px; display: none; align-items: center; gap: 4px;">
+                                        <i class="fa-solid fa-crop-simple"></i> ปรับตำแหน่ง/ขนาดรูป
+                                    </button>
                                     <span id="id-card-status" style="font-size: 11px; color: var(--primary); font-weight: 500; display: none;"><i class="fa-solid fa-circle-check"></i> อัปโหลดแล้ว</span>
                                     <input type="file" id="editor-id-card-file" accept="image/*" style="display: none;">
                                 </div>
@@ -1125,6 +1128,51 @@
     </div>
 
 
+
+    <!-- 5. ID Card Crop & Adjust Modal -->
+    <div class="modal" id="id-card-crop-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15, 23, 42, 0.75); z-index:1000; align-items:center; justify-content:center; padding:16px;">
+        <div class="card" style="width: 100%; max-width: 560px; padding: 20px; position:relative; box-shadow: var(--shadow-lg); background:#fff; border-radius:12px; display:flex; flex-direction:column; gap:12px;">
+            <button class="btn btn-secondary btn-sm" onclick="closeIdCardCropModal()" style="position:absolute; right:16px; top:16px; border:none; padding:4px 8px;"><i class="fa-solid fa-times" style="font-size:16px;"></i></button>
+            <h2 class="card-title" style="margin:0; font-size:16px; font-family:'Prompt', sans-serif;"><i class="fa-solid fa-crop-simple" style="color:var(--primary);"></i> ปรับตำแหน่งและขนาดรูปบัตรประชาชน</h2>
+            <div style="font-size:12px; color:var(--text-muted); line-height:1.4;">
+                💡 <b>วิธีปรับแต่ง:</b> คลิกลากรูปภาพเพื่อขยับตำแหน่ง (Pan) และเลื่อนสไลเดอร์เพื่อย่อ/ขยาย (Zoom) ให้บัตรเข้าเฟรมพอดี
+            </div>
+
+            <!-- Canvas Viewport Box with Frame Overlay -->
+            <div style="position:relative; width:100%; display:flex; justify-content:center; background:#0f172a; border-radius:8px; overflow:hidden; padding:16px 0; user-select:none; touch-action:none;" id="crop-viewport-container">
+                <canvas id="id-card-crop-canvas" width="500" height="315" style="border: 2px dashed #38bdf8; border-radius: 6px; cursor: move; box-shadow: 0 0 20px rgba(0,0,0,0.5); background:#1e293b; max-width:92%; height:auto;"></canvas>
+                <!-- Guidance Label -->
+                <div style="position:absolute; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:#fff; font-size:11px; padding:3px 12px; border-radius:12px; pointer-events:none; font-family:'Prompt', sans-serif;">
+                    กรอบบัตรประชาชนมาตรฐาน (8.56 x 5.4 ซม.)
+                </div>
+            </div>
+
+            <!-- Interactive Controls -->
+            <div style="display:flex; flex-direction:column; gap:10px; background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #e2e8f0;">
+                <!-- Zoom Slider -->
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:12px; font-weight:600; min-width:85px; color:#334155;"><i class="fa-solid fa-magnifying-glass-plus"></i> ย่อ/ขยาย:</span>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-crop-zoom-out" style="padding:2px 8px;"><i class="fa-solid fa-minus"></i></button>
+                    <input type="range" id="crop-zoom-slider" min="0.2" max="3.0" step="0.02" value="1.0" style="flex-grow:1; cursor:pointer;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-crop-zoom-in" style="padding:2px 8px;"><i class="fa-solid fa-plus"></i></button>
+                    <span id="crop-zoom-val" style="font-size:12px; font-weight:600; width:45px; text-align:right; color:#0284c7;">100%</span>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-crop-fit" style="font-size:11px; padding:4px 10px;"><i class="fa-solid fa-expand"></i> พอดีเฟรม</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-crop-rotate" style="font-size:11px; padding:4px 10px;"><i class="fa-solid fa-rotate-right"></i> หมุนรูป 90°</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-crop-center" style="font-size:11px; padding:4px 10px;"><i class="fa-solid fa-arrows-to-dot"></i> จัดกึ่งกลาง</button>
+                </div>
+            </div>
+
+            <!-- Action Footer -->
+            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:4px;">
+                <button type="button" class="btn btn-secondary" onclick="closeIdCardCropModal()">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" id="btn-save-cropped-id-card"><i class="fa-solid fa-check"></i> ตกลง (บันทึกรูปบัตร)</button>
+            </div>
+        </div>
+    </div>
 
     <!-- JavaScript Files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

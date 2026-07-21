@@ -163,6 +163,9 @@ function loadDB() {
                 if (state.db.settings.idCardBase64 === undefined) {
                     state.db.settings.idCardBase64 = '';
                 }
+                if (state.db.settings.idCardRawBase64 === undefined) {
+                    state.db.settings.idCardRawBase64 = '';
+                }
             }
             if (!state.db.customers) state.db.customers = [];
             if (!state.db.catalog) state.db.catalog = [];
@@ -1214,8 +1217,9 @@ function initDocGeneratorPage() {
         updateCalculationsAndPreview();
     });
 
-    // ID Card Upload bindings
+    // ID Card Upload & Crop bindings
     const btnUploadIdCard = document.getElementById('btn-upload-id-card');
+    const btnCropIdCard = document.getElementById('btn-crop-id-card');
     const fileInputIdCard = document.getElementById('editor-id-card-file');
     
     if (btnUploadIdCard && fileInputIdCard) {
@@ -1227,20 +1231,24 @@ function initDocGeneratorPage() {
             
             const reader = new FileReader();
             reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    autoProcessIdCardImage(img, (croppedBase64) => {
-                        state.db.settings.idCardBase64 = croppedBase64;
-                        saveDB();
-                        updateIdCardUploadStatus();
-                        updateCalculationsAndPreview();
-                    });
-                };
-                img.src = event.target.result;
+                const dataUrl = event.target.result;
+                state.db.settings.idCardRawBase64 = dataUrl;
+                state.db.settings.idCardBase64 = dataUrl;
+                saveDB();
+                updateIdCardUploadStatus();
+                openIdCardCropModal(dataUrl);
             };
             reader.readAsDataURL(file);
         });
     }
+
+    if (btnCropIdCard) {
+        btnCropIdCard.addEventListener('click', () => {
+            openIdCardCropModal();
+        });
+    }
+
+    initCropCanvasEvents();
 
     // Bank Account Edit binding
     bindField('editor-bank-name', 'bankName');
@@ -3152,103 +3160,250 @@ function renderSettingsSignaturesList() {
 // Helper to update the ID Card upload status UI
 function updateIdCardUploadStatus() {
     const statusSpan = document.getElementById('id-card-status');
-    const btn = document.getElementById('btn-upload-id-card');
-    if (!statusSpan || !btn) return;
+    const btnUpload = document.getElementById('btn-upload-id-card');
+    const btnCrop = document.getElementById('btn-crop-id-card');
+    if (!statusSpan || !btnUpload) return;
     
-    if (state.db.settings.idCardBase64) {
+    if (state.db.settings.idCardBase64 || state.db.settings.idCardRawBase64) {
         statusSpan.style.display = 'inline-flex';
-        btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> เปลี่ยนรูปบัตร';
+        btnUpload.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> เปลี่ยนรูปบัตร';
+        if (btnCrop) btnCrop.style.display = 'inline-flex';
     } else {
         statusSpan.style.display = 'none';
-        btn.innerHTML = '<i class="fa-solid fa-upload"></i> อัปโหลดรูปบัตร';
+        btnUpload.innerHTML = '<i class="fa-solid fa-upload"></i> อัปโหลดรูปบัตร';
+        if (btnCrop) btnCrop.style.display = 'none';
     }
 }
 
-// Automatic background-removal / border-cropping algorithm for ID Cards
-function autoProcessIdCardImage(img, callback) {
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    
-    // Scale image down to 400px width for fast scanning
-    const scanWidth = 400;
-    const scanHeight = Math.round((img.height / img.width) * scanWidth);
-    tempCanvas.width = scanWidth;
-    tempCanvas.height = scanHeight;
-    tempCtx.drawImage(img, 0, 0, scanWidth, scanHeight);
-    
-    const imgData = tempCtx.getImageData(0, 0, scanWidth, scanHeight);
-    const data = imgData.data;
-    
-    // Helper to get pixel RGB
-    const getPixel = (arr, w, x, y) => {
-        const idx = (y * w + x) * 4;
-        return { r: arr[idx], g: arr[idx+1], b: arr[idx+2] };
+// Crop & Scale Modal State
+let cropState = {
+    img: null,
+    scale: 1.0,
+    offsetX: 0,
+    offsetY: 0,
+    rotation: 0,
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    eventsInited: false
+};
+
+function openIdCardCropModal(imageSource) {
+    const modal = document.getElementById('id-card-crop-modal');
+    if (!modal) return;
+
+    const imgSrc = imageSource || state.db.settings.idCardRawBase64 || state.db.settings.idCardBase64;
+    if (!imgSrc) {
+        document.getElementById('editor-id-card-file').click();
+        return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+        cropState.img = img;
+        cropState.rotation = 0;
+        
+        // Auto fit initial scale
+        const cw = 500;
+        const ch = 315;
+        const fitScale = Math.max(cw / img.width, ch / img.height);
+        cropState.scale = fitScale;
+        cropState.offsetX = 0;
+        cropState.offsetY = 0;
+
+        const slider = document.getElementById('crop-zoom-slider');
+        if (slider) {
+            slider.min = (fitScale * 0.3).toFixed(2);
+            slider.max = (fitScale * 4.0).toFixed(2);
+            slider.step = "0.01";
+            slider.value = fitScale.toFixed(2);
+            updateZoomValDisplay();
+        }
+
+        modal.style.display = 'flex';
+        drawCropCanvas();
+    };
+    img.src = imgSrc;
+}
+
+function closeIdCardCropModal() {
+    const modal = document.getElementById('id-card-crop-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function updateZoomValDisplay() {
+    const valSpan = document.getElementById('crop-zoom-val');
+    if (valSpan) {
+        valSpan.textContent = Math.round(cropState.scale * 100) + '%';
+    }
+}
+
+function drawCropCanvas() {
+    const canvas = document.getElementById('id-card-crop-canvas');
+    if (!canvas || !cropState.img) return;
+    const ctx = canvas.getContext('2d');
+    const cw = canvas.width;
+    const ch = canvas.height;
+
+    ctx.clearRect(0, 0, cw, ch);
+
+    ctx.save();
+    ctx.translate(cw / 2 + cropState.offsetX, ch / 2 + cropState.offsetY);
+    ctx.rotate((cropState.rotation * Math.PI) / 180);
+    ctx.scale(cropState.scale, cropState.scale);
+
+    ctx.drawImage(cropState.img, -cropState.img.width / 2, -cropState.img.height / 2);
+    ctx.restore();
+}
+
+function initCropCanvasEvents() {
+    if (cropState.eventsInited) return;
+    cropState.eventsInited = true;
+
+    const canvas = document.getElementById('id-card-crop-canvas');
+    if (!canvas) return;
+
+    const getClientPos = (e) => {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
     };
 
-    // Calculate background reference by averaging the 4 corners
-    const corners = [
-        getPixel(data, scanWidth, 0, 0),
-        getPixel(data, scanWidth, scanWidth - 1, 0),
-        getPixel(data, scanWidth, 0, scanHeight - 1),
-        getPixel(data, scanWidth, scanWidth - 1, scanHeight - 1)
-    ];
-    const bgR = corners.reduce((sum, c) => sum + c.r, 0) / 4;
-    const bgG = corners.reduce((sum, c) => sum + c.g, 0) / 4;
-    const bgB = corners.reduce((sum, c) => sum + c.b, 0) / 4;
-    
-    const threshold = 40; // Color distance threshold
-    let minX = scanWidth, maxX = 0, minY = scanHeight, maxY = 0;
-    
-    // Find bounding box of pixels that differ from background
-    for (let y = 0; y < scanHeight; y++) {
-        for (let x = 0; x < scanWidth; x++) {
-            const p = getPixel(data, scanWidth, x, y);
-            const dist = Math.sqrt(Math.pow(p.r - bgR, 2) + Math.pow(p.g - bgG, 2) + Math.pow(p.b - bgB, 2));
-            if (dist > threshold) {
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-            }
-        }
+    const startDrag = (e) => {
+        if (!cropState.img) return;
+        cropState.isDragging = true;
+        const pos = getClientPos(e);
+        cropState.startX = pos.x - cropState.offsetX;
+        cropState.startY = pos.y - cropState.offsetY;
+    };
+
+    const moveDrag = (e) => {
+        if (!cropState.isDragging || !cropState.img) return;
+        if (e.preventDefault && e.cancelable) e.preventDefault();
+        const pos = getClientPos(e);
+        cropState.offsetX = pos.x - cropState.startX;
+        cropState.offsetY = pos.y - cropState.startY;
+        drawCropCanvas();
+    };
+
+    const endDrag = () => {
+        cropState.isDragging = false;
+    };
+
+    canvas.addEventListener('mousedown', startDrag);
+    window.addEventListener('mousemove', moveDrag);
+    window.addEventListener('mouseup', endDrag);
+
+    canvas.addEventListener('touchstart', startDrag, { passive: false });
+    window.addEventListener('touchmove', moveDrag, { passive: false });
+    window.addEventListener('touchend', endDrag);
+
+    // Mouse wheel zoom
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.05 : -0.05;
+        const slider = document.getElementById('crop-zoom-slider');
+        const minScale = slider ? parseFloat(slider.min) : 0.1;
+        const maxScale = slider ? parseFloat(slider.max) : 4.0;
+        
+        cropState.scale = Math.min(maxScale, Math.max(minScale, cropState.scale + delta));
+        if (slider) slider.value = cropState.scale;
+        updateZoomValDisplay();
+        drawCropCanvas();
+    }, { passive: false });
+
+    // Slider input
+    const slider = document.getElementById('crop-zoom-slider');
+    if (slider) {
+        slider.addEventListener('input', (e) => {
+            cropState.scale = parseFloat(e.target.value);
+            updateZoomValDisplay();
+            drawCropCanvas();
+        });
     }
-    
-    const scaleX = img.width / scanWidth;
-    const scaleY = img.height / scanHeight;
-    let cropX, cropY, cropW, cropH;
-    
-    const detectedW = maxX - minX;
-    const detectedH = maxY - minY;
-    
-    // If we found a valid card bounding box, crop it
-    if (detectedW > 50 && detectedH > 50 && detectedW < scanWidth - 10 && detectedH < scanHeight - 10) {
-        cropX = minX * scaleX;
-        cropY = minY * scaleY;
-        cropW = detectedW * scaleX;
-        cropH = detectedH * scaleY;
-    } else {
-        // Fallback: Crop center of the image with the standard ID card aspect ratio (1.58)
-        const targetRatio = 1.58;
-        const currentRatio = img.width / img.height;
-        if (currentRatio > targetRatio) {
-            cropH = img.height * 0.9;
-            cropW = cropH * targetRatio;
-            cropX = (img.width - cropW) / 2;
-            cropY = (img.height - cropH) / 2;
-        } else {
-            cropW = img.width * 0.9;
-            cropH = cropW / targetRatio;
-            cropX = (img.width - cropW) / 2;
-            cropY = (img.height - cropH) / 2;
-        }
+
+    // Zoom buttons
+    const btnZoomIn = document.getElementById('btn-crop-zoom-in');
+    const btnZoomOut = document.getElementById('btn-crop-zoom-out');
+    if (btnZoomIn) {
+        btnZoomIn.addEventListener('click', () => {
+            const slider = document.getElementById('crop-zoom-slider');
+            const maxScale = slider ? parseFloat(slider.max) : 4.0;
+            cropState.scale = Math.min(maxScale, cropState.scale + 0.1);
+            if (slider) slider.value = cropState.scale;
+            updateZoomValDisplay();
+            drawCropCanvas();
+        });
     }
-    
-    // Render the cropped ID card onto a clean standard card size canvas
-    const outputCanvas = document.createElement('canvas');
-    const outputCtx = outputCanvas.getContext('2d');
-    outputCanvas.width = 1000;
-    outputCanvas.height = 633; // ~1.58 aspect ratio
-    outputCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, 1000, 633);
-    
-    callback(outputCanvas.toDataURL('image/jpeg', 0.9));
+    if (btnZoomOut) {
+        btnZoomOut.addEventListener('click', () => {
+            const slider = document.getElementById('crop-zoom-slider');
+            const minScale = slider ? parseFloat(slider.min) : 0.1;
+            cropState.scale = Math.max(minScale, cropState.scale - 0.1);
+            if (slider) slider.value = cropState.scale;
+            updateZoomValDisplay();
+            drawCropCanvas();
+        });
+    }
+
+    // Action buttons
+    const btnFit = document.getElementById('btn-crop-fit');
+    if (btnFit) {
+        btnFit.addEventListener('click', () => {
+            if (!cropState.img) return;
+            const fitScale = Math.max(500 / cropState.img.width, 315 / cropState.img.height);
+            cropState.scale = fitScale;
+            cropState.offsetX = 0;
+            cropState.offsetY = 0;
+            if (slider) slider.value = fitScale;
+            updateZoomValDisplay();
+            drawCropCanvas();
+        });
+    }
+
+    const btnRotate = document.getElementById('btn-crop-rotate');
+    if (btnRotate) {
+        btnRotate.addEventListener('click', () => {
+            cropState.rotation = (cropState.rotation + 90) % 360;
+            drawCropCanvas();
+        });
+    }
+
+    const btnCenter = document.getElementById('btn-crop-center');
+    if (btnCenter) {
+        btnCenter.addEventListener('click', () => {
+            cropState.offsetX = 0;
+            cropState.offsetY = 0;
+            drawCropCanvas();
+        });
+    }
+
+    // Save button
+    const btnSave = document.getElementById('btn-save-cropped-id-card');
+    if (btnSave) {
+        btnSave.addEventListener('click', () => {
+            if (!cropState.img) return;
+
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width = 1000;
+            outputCanvas.height = 630; // High resolution 1:1.587 ratio
+            const outCtx = outputCanvas.getContext('2d');
+
+            const ratio = 1000 / 500; // 2x scale factor for high res PDF
+            outCtx.save();
+            outCtx.translate(1000 / 2 + cropState.offsetX * ratio, 630 / 2 + cropState.offsetY * ratio);
+            outCtx.rotate((cropState.rotation * Math.PI) / 180);
+            outCtx.scale(cropState.scale * ratio, cropState.scale * ratio);
+            outCtx.drawImage(cropState.img, -cropState.img.width / 2, -cropState.img.height / 2);
+            outCtx.restore();
+
+            const croppedDataUrl = outputCanvas.toDataURL('image/jpeg', 0.92);
+            state.db.settings.idCardBase64 = croppedDataUrl;
+            saveDB();
+            closeIdCardCropModal();
+            updateIdCardUploadStatus();
+            updateCalculationsAndPreview();
+        });
+    }
 }
